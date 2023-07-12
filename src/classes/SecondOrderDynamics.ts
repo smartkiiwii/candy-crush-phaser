@@ -77,6 +77,12 @@ export default class SecondOrderDynamics {
         this.k3 = SecondOrderDynamics.calcK3(config)
     }
 
+    public reset(xi: Vector2) {
+        this.xp.set(xi.x, xi.y)
+        this.y.set(xi.x, xi.y)
+        this.yd.set(0, 0)
+    }
+
     private static calcK1(config: DynamicConfig): number {
         return config.dampening / (PI * config.responseRate)
     }
@@ -152,6 +158,12 @@ export class SecondOrderDynamicsScalar {
         this.k1 = SecondOrderDynamicsScalar.calcK1(config)
         this.k2 = SecondOrderDynamicsScalar.calcK2(config)
         this.k3 = SecondOrderDynamicsScalar.calcK3(config)
+    }
+
+    public reset(xi: number) {
+        this.xp = xi
+        this.y = xi
+        this.yd = 0
     }
 
     private static calcK1(config: DynamicConfig): number {

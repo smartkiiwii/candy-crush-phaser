@@ -90,11 +90,13 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 case CandyGridState.CHECK:
                     this.matches = this.getMatches()
 
-                    if (this.matches.length > 0) {
-                        this.gridState.transition(CandyGridState.CLEAR)
-                    } else {
-                        this.gridState.transition(CandyGridState.IDLE)
-                    }
+                    scene.time.delayedCall(500, () => {
+                        if (this.matches.length > 0) {
+                            this.gridState.transition(CandyGridState.CLEAR)
+                        } else {
+                            this.gridState.transition(CandyGridState.IDLE)
+                        }
+                    })
 
                     break
 
@@ -144,42 +146,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             this.tiles.forEach((row) => {
                 row.forEach((tile) => {
                     // with padding from config
-                    tile.setPosition(
+                    tile.setTargetPosition(
                         (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding,
-                        (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding
-                    )
-                })
-            })
-        }
-
-        return this
-    }
-
-    setX(value?: number | undefined): this {
-        super.setX(value)
-
-        if (this.tiles) {
-            const { x } = this.getTopLeft()
-            this.tiles.forEach((row) => {
-                row.forEach((tile) => {
-                    tile.setX(
-                        (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding
-                    )
-                })
-            })
-        }
-
-        return this
-    }
-
-    setY(value?: number | undefined): this {
-        super.setY(value)
-
-        if (this.tiles) {
-            const { y } = this.getTopLeft()
-            this.tiles.forEach((row) => {
-                row.forEach((tile) => {
-                    tile.setY(
                         (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding
                     )
                 })
@@ -306,21 +274,18 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     }
 
     private swapTilesGraphics(tileA: Tile, tileB: Tile) {
-        const tileAX = tileA.x
-        const tileAY = tileA.y
-        const tileBX = tileB.x
-        const tileBY = tileB.y
-        tileA.setPosition(tileBX, tileBY)
-        tileB.setPosition(tileAX, tileAY)
+        const { x: tileAX, y: tileAY } = tileA.getTargetPosition()
+        const { x: tileBX, y: tileBY } = tileB.getTargetPosition()
+
+        tileA.setTargetPosition(tileBX, tileBY)
+        tileB.setTargetPosition(tileAX, tileAY)
     }
 
     private swapTilesAnimate(tileA: Tile, tileB: Tile) {
         if (!this.gridState.is(CandyGridState.IDLE)) return
 
-        const tileAX = tileA.x
-        const tileAY = tileA.y
-        const tileBX = tileB.x
-        const tileBY = tileB.y
+        const { x: tileAX, y: tileAY } = tileA.getTargetPosition()
+        const { x: tileBX, y: tileBY } = tileB.getTargetPosition()
 
         this.swapTilesInternal(tileA, tileB)
         this.matches = this.getMatches()
@@ -340,11 +305,11 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             onUpdate: (tween) => {
                 const value = tween.getValue()
 
-                tileA.setPosition(
+                tileA.setTargetPosition(
                     tileAX + (tileBX - tileAX) * value,
                     tileAY + (tileBY - tileAY) * value
                 )
-                tileB.setPosition(
+                tileB.setTargetPosition(
                     tileBX + (tileAX - tileBX) * value,
                     tileBY + (tileAY - tileBY) * value
                 )
