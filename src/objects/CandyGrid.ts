@@ -280,26 +280,33 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     }
 
     private swapTilesImmediate(tileA: Tile, tileB: Tile) {
+        this.swapTilesInternal(tileA, tileB)
+        this.swapTilesGraphics(tileA, tileB)
+    }
+
+    private swapTilesInternal(tileA: Tile, tileB: Tile) {
         const tileAGridX = tileA.gridX
         const tileAGridY = tileA.gridY
         const tileBGridX = tileB.gridX
         const tileBGridY = tileB.gridY
 
-        const tileAX = tileA.x
-        const tileAY = tileA.y
-        const tileBX = tileB.x
-        const tileBY = tileB.y
-
+        
         tileA.gridX = tileBGridX
         tileA.gridY = tileBGridY
         tileB.gridX = tileAGridX
         tileB.gridY = tileAGridY
 
-        tileA.setPosition(tileBX, tileBY)
-        tileB.setPosition(tileAX, tileAY)
-
         this.tiles[tileBGridX][tileBGridY] = tileA
         this.tiles[tileAGridX][tileAGridY] = tileB
+    }
+
+    private swapTilesGraphics(tileA: Tile, tileB: Tile) {
+        const tileAX = tileA.x
+        const tileAY = tileA.y
+        const tileBX = tileB.x
+        const tileBY = tileB.y
+        tileA.setPosition(tileBX, tileBY)
+        tileB.setPosition(tileAX, tileAY)
     }
 
     private swapTilesAnimate(tileA: Tile, tileB: Tile) {
@@ -310,18 +317,18 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         const tileBX = tileB.x
         const tileBY = tileB.y
 
-        this.swapTilesImmediate(tileA, tileB)
+        this.swapTilesInternal(tileA, tileB)
         this.matches = this.getMatches()
 
         if (this.matches.length === 0) {
-            this.swapTilesImmediate(tileA, tileB)
+            this.swapTilesInternal(tileA, tileB)
         }
 
         // swaps A and B
         this.scene.tweens.addCounter({
             from: 0,
             to: 1,
-            duration: 100,
+            duration: 300,
             ease: 'Sine.easeInOut',
             repeat: 0,
             yoyo: this.matches.length === 0,
@@ -338,7 +345,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 )
             },
             onComplete: () => {
-                console.log('swap complete')
                 if (this.matches.length > 0) {
                     this.gridState.transition(CandyGridState.CLEAR)
                 }
