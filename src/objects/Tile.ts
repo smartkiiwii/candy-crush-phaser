@@ -6,7 +6,7 @@ export class Tile extends Phaser.GameObjects.Image {
     public gridX: number
     public gridY: number
     public isCleared: boolean
-    
+
     private tweener: SecondOrderDynamics
     private targetPosition: Phaser.Math.Vector2
 
@@ -26,7 +26,7 @@ export class Tile extends Phaser.GameObjects.Image {
         this.tweener = new SecondOrderDynamics(this.targetPosition, {
             responseRate: 0.002,
             dampening: 0.5,
-            eagerness: 2
+            eagerness: 2,
         })
     }
 
@@ -35,10 +35,11 @@ export class Tile extends Phaser.GameObjects.Image {
 
         this.setPosition(
             newPos.x,
-            newPos.y > this.targetPosition.y ? this.targetPosition.y - (newPos.y - this.targetPosition.y) : newPos.y
+            newPos.y > this.targetPosition.y
+                ? this.targetPosition.y - (newPos.y - this.targetPosition.y)
+                : newPos.y
         )
     }
-        
 
     public clearTile() {
         this.isCleared = true
@@ -62,9 +63,13 @@ export class Tile extends Phaser.GameObjects.Image {
 
         this.isCleared = false
         this.setVisible(true)
-        
+
         // supposed to be this.targetPosition.y - GRID_CONFIG.tileHeight * (this.gridX + 1) but * 2 looks stylistically better
-        this.tweener.reset(this.targetPosition.clone().set(this.targetPosition.x, this.targetPosition.y - GRID_CONFIG.tileHeight * 2))
+        this.tweener.reset(
+            this.targetPosition
+                .clone()
+                .set(this.targetPosition.x, this.targetPosition.y - GRID_CONFIG.tileHeight * 2)
+        )
     }
 
     public isSameType(tile: Tile) {

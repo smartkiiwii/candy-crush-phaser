@@ -263,7 +263,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         const tileBGridX = tileB.gridX
         const tileBGridY = tileB.gridY
 
-        
         tileA.gridX = tileBGridX
         tileA.gridY = tileBGridY
         tileB.gridX = tileAGridX
