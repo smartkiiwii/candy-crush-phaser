@@ -3,7 +3,7 @@ export const StateMachineEvents = {
     STATE_RESET: 'stateReset',
 } as const
 
-export type StateMachineEvents = typeof StateMachineEvents[keyof typeof StateMachineEvents]
+export type StateMachineEvents = (typeof StateMachineEvents)[keyof typeof StateMachineEvents]
 
 export default class StateMachine<T> {
     private initialState: T
@@ -55,17 +55,29 @@ export default class StateMachine<T> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public onStateChange(event: StateMachineEvents, callback: (state: T, prev: T) => void, context?: any): void {
+    public onStateChange(
+        event: StateMachineEvents,
+        callback: (state: T, prev: T) => void,
+        context?: any
+    ): void {
         this.emitter.on(event, callback, context)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public offStateChange(event: StateMachineEvents, callback: (state: T, prev: T) => void, context?: any): void {
+    public offStateChange(
+        event: StateMachineEvents,
+        callback: (state: T, prev: T) => void,
+        context?: any
+    ): void {
         this.emitter.off(event, callback, context)
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public onceStateChange(event: StateMachineEvents, callback: (state: T, prev: T) => void, context?: any): void {
+    public onceStateChange(
+        event: StateMachineEvents,
+        callback: (state: T, prev: T) => void,
+        context?: any
+    ): void {
         this.emitter.once(event, callback, context)
     }
 }
