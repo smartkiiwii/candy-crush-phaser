@@ -1,4 +1,4 @@
-import SecondOrderDynamics, { DynamicConfig } from "@/classes/SecondOrderDynamics"
+import SecondOrderDynamics, { DynamicConfig } from '@/classes/SecondOrderDynamics'
 import Vector2 = Phaser.Math.Vector2
 
 const DEFAULT_CONFIG: DynamicConfig = {
@@ -26,22 +26,39 @@ export default class TweenScene extends Phaser.Scene {
 
     create() {
         // create draggable start and end handle
-        this.targetHandle = this.add.ellipse(this.cameras.main.centerX, this.cameras.main.centerY, 50, 50, 0x000000, 0).setStrokeStyle(1, 0x000000).setInteractive()
-        this.followHandle = this.add.ellipse(this.cameras.main.centerX, this.cameras.main.centerY, 40, 40, 0x000000)
+        this.targetHandle = this.add
+            .ellipse(this.cameras.main.centerX, this.cameras.main.centerY, 50, 50, 0x000000, 0)
+            .setStrokeStyle(1, 0x000000)
+            .setInteractive()
+        this.followHandle = this.add.ellipse(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            40,
+            40,
+            0x000000
+        )
         this.targetPosition = new Vector2(this.targetHandle.x, this.targetHandle.y)
-        
+
         // create tweener
-        this.config = {...DEFAULT_CONFIG}
+        this.config = { ...DEFAULT_CONFIG }
         this.tweener = new SecondOrderDynamics(this.targetPosition, this.config)
 
         // make start and end handle draggable
         this.input.setDraggable(this.targetHandle)
 
         // add drag event listeners
-        this.input.on('drag', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Ellipse, dragX: number, dragY: number) => {
-            gameObject.x = dragX
-            gameObject.y = dragY
-        })
+        this.input.on(
+            'drag',
+            (
+                pointer: Phaser.Input.Pointer,
+                gameObject: Phaser.GameObjects.Ellipse,
+                dragX: number,
+                dragY: number
+            ) => {
+                gameObject.x = dragX
+                gameObject.y = dragY
+            }
+        )
 
         // create line
         this.line = this.add.line(0, 0, 0, 0, 0, 0).setStrokeStyle(1, 0x000000)
@@ -52,15 +69,20 @@ export default class TweenScene extends Phaser.Scene {
     update(time: number, delta: number) {
         // update target position
         this.targetPosition.set(this.targetHandle.x, this.targetHandle.y)
-        
+
         // update tweener
         const newPos = this.tweener.update(delta, this.targetPosition)
-        
+
         // update follow handle
         this.followHandle.setPosition(newPos.x, newPos.y)
-        
+
         // update line
-        this.line.setTo(this.targetHandle.x, this.targetHandle.y, this.followHandle.x, this.followHandle.y)
+        this.line.setTo(
+            this.targetHandle.x,
+            this.targetHandle.y,
+            this.followHandle.x,
+            this.followHandle.y
+        )
     }
 
     private createForm() {
@@ -73,7 +95,8 @@ export default class TweenScene extends Phaser.Scene {
         const eagernessElement = form.getChildByName('eagerness') as HTMLInputElement
         const resetButton = form.getChildByName('reset') as HTMLInputElement
 
-        if (!responseElement || !dampeningElement || !eagernessElement || !resetButton) throw new Error('Could not find form elements')
+        if (!responseElement || !dampeningElement || !eagernessElement || !resetButton)
+            throw new Error('Could not find form elements')
 
         responseElement.value = this.config.responseRate.toString()
         dampeningElement.value = this.config.dampening.toString()
