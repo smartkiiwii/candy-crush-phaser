@@ -213,7 +213,12 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             return
         }
 
-        if (this.tileDown.gridX === tile.gridX || this.tileDown.gridY === tile.gridY) {
+        const difference = {
+            gridX: Math.abs(this.tileDown.gridX - tile.gridX),
+            gridY: Math.abs(this.tileDown.gridY - tile.gridY),
+        }
+
+        if (difference.gridX + difference.gridY === 1) {
             this.swapTilesAnimate(this.tileDown, tile)
             this.tileDown = null
         }
