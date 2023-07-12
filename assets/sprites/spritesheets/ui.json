@@ -1,0 +1,40 @@
+{
+	"textures": [
+		{
+			"image": "ui.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 480,
+				"h": 528
+			},
+			"scale": 1,
+			"frames": [
+                {
+					"filename": "candy-grid",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 48
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					},
+					"frame": {
+						"x": 0,
+						"y": 32,
+						"w": 48,
+						"h": 48
+					}
+				}
+            ]
+		}
+	],
+	"meta": {
+		"app": "Manual",
+		"version": "0.0"
+	}
+}

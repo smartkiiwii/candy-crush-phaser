@@ -1,0 +1,14 @@
+{ "columns":30,
+ "image":"ui.png",
+ "imageheight":528,
+ "imagewidth":480,
+ "margin":0,
+ "name":"ui",
+ "spacing":0,
+ "tilecount":990,
+ "tiledversion":"1.10.1",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
+}

@@ -41,6 +41,13 @@ export class BootScene extends Phaser.Scene {
 
         // load out package
         this.load.pack('preload', './assets/pack.json', 'preload')
+
+        // load spritesheet
+        this.load.atlas(
+            'ui',
+            './assets/sprites/spritesheets/ui.png',
+            './assets/sprites/spritesheets/ui.json'
+        )
     }
 
     update(): void {
