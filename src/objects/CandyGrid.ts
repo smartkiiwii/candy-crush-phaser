@@ -5,6 +5,7 @@ import DampenedParticleProcessor from '@/classes/DampenedParticle'
 
 export const CandyGridState = {
     IDLE: 'IDLE',
+    SWAP_ANIMATE: 'SWAP_ANIMATE',
     CHECK: 'CHECK',
     CLEAR: 'CLEAR',
     BUBBLE: 'BUBBLE',
@@ -235,10 +236,12 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         if (this.tileDown === null) {
             this.tileDown = tile
+            this.tileDown.playFocusAnimation()
             return
         }
 
         if (this.tileDown === tile) {
+            this.tileDown.stopFocusAnimation()
             this.tileDown = null
             return
         }
@@ -250,7 +253,12 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         if (difference.gridX + difference.gridY === 1) {
             this.swapTilesAnimate(this.tileDown, tile)
+            this.tileDown.stopFocusAnimation()
             this.tileDown = null
+        } else {
+            this.tileDown.stopFocusAnimation()
+            this.tileDown = tile
+            this.tileDown.playFocusAnimation()
         }
     }
 
@@ -342,6 +350,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private swapTilesAnimate(tileA: Tile, tileB: Tile) {
         if (!this.gridState.is(CandyGridState.IDLE)) return
 
+        this.gridState.transition(CandyGridState.SWAP_ANIMATE)
+
         const { x: tileAX, y: tileAY } = tileA.getTargetPosition()
         const { x: tileBX, y: tileBY } = tileB.getTargetPosition()
 
@@ -375,6 +385,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             onComplete: () => {
                 if (this.matches.length > 0) {
                     this.gridState.transition(CandyGridState.CLEAR)
+                } else {
+                    this.gridState.transition(CandyGridState.IDLE)
                 }
             },
         })

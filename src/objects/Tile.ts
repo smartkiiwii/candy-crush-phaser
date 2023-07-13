@@ -9,6 +9,12 @@ export class Tile extends Phaser.GameObjects.Image {
     private tweener: SecondOrderDynamics
     private targetPosition: Phaser.Math.Vector2
 
+    private isLiveTweening: boolean
+
+    private focusTweener: Phaser.Tweens.Tween
+
+    private originalScale: number
+
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
 
@@ -26,17 +32,42 @@ export class Tile extends Phaser.GameObjects.Image {
             dampening: 0.5,
             eagerness: 2,
         })
+
+        this.isLiveTweening = true
+
+        this.originalScale = this.scaleX
+
+        this.focusTweener = this.scene.tweens.addCounter({
+            duration: 250,
+            repeat: -1,
+            yoyo: true,
+            paused: true,
+            onUpdate: (tween) => {
+                const value = tween.getValue()
+
+                this.scaleX =
+                    this.originalScale - Phaser.Math.Easing.Linear(value) * this.originalScale * 0.2
+                this.scaleY =
+                    this.originalScale +
+                    Phaser.Math.Easing.Linear(value) * this.originalScale * 0.15
+
+                this.y =
+                    this.targetPosition.y - Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * 20
+            },
+        })
     }
 
     preUpdate(time: number, delta: number): void {
-        const newPos = this.tweener.update(delta, this.targetPosition)
+        if (this.isLiveTweening) {
+            const newPos = this.tweener.update(delta, this.targetPosition)
 
-        this.setPosition(
-            newPos.x,
-            newPos.y > this.targetPosition.y
-                ? this.targetPosition.y - (newPos.y - this.targetPosition.y)
-                : newPos.y
-        )
+            this.setPosition(
+                newPos.x,
+                newPos.y > this.targetPosition.y
+                    ? this.targetPosition.y - (newPos.y - this.targetPosition.y)
+                    : newPos.y
+            )
+        }
     }
 
     public clearTile() {
@@ -83,5 +114,27 @@ export class Tile extends Phaser.GameObjects.Image {
 
     public getTargetPosition() {
         return this.targetPosition
+    }
+
+    public playFocusAnimation() {
+        const currentScale = this.scaleX
+        const currentDepth = this.depth
+
+        this.isLiveTweening = false
+        this.setDepth(100)
+
+        this.focusTweener
+            .seek(0)
+            .play()
+            .once(Phaser.Tweens.Events.TWEEN_PAUSE, () => {
+                this.setScale(currentScale)
+                this.setDepth(currentDepth)
+            })
+    }
+
+    public stopFocusAnimation() {
+        this.focusTweener.pause()
+        this.resetTweenOrigin(this.x, this.y)
+        this.isLiveTweening = true
     }
 }

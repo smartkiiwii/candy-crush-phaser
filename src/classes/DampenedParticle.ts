@@ -22,9 +22,7 @@ export default class DampenedParticleProcessor extends Phaser.GameObjects.Partic
         this.snapAt = config.snapAt ?? 0
     }
 
-    update(
-        particle: Phaser.GameObjects.Particles.Particle,
-    ): void {
+    update(particle: Phaser.GameObjects.Particles.Particle): void {
         particle.velocityX *= this.strength
         particle.velocityY *= this.strength
 
