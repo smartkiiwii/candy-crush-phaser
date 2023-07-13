@@ -1,11 +1,13 @@
 import StateMachine, { StateMachineEvents } from '@/classes/StateMachine'
 import { Tile } from './Tile'
 import { GRID_CONFIG } from '@/constants/const'
+import DampenedParticleProcessor from '@/classes/DampenedParticle'
 
 export const CandyGridState = {
     IDLE: 'IDLE',
     CHECK: 'CHECK',
     CLEAR: 'CLEAR',
+    BUBBLE: 'BUBBLE',
 } as const
 
 export type CandyGridState = (typeof CandyGridState)[keyof typeof CandyGridState]
@@ -21,6 +23,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private gridConfig: GridConfig
     private tileDown: Tile | null
     private matches: Match[]
+
+    private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter
 
     constructor(scene: Phaser.Scene, gridConfig: GridConfig) {
         const {
@@ -59,6 +63,19 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridConfig = gridConfig
         this.tileDown = null
         this.matches = []
+        // particle that expands quickly, slows down, and fades out
+        this.clearParticles = scene.add.particles(0, 0, 'star', {
+            emitting: false,
+            speed: 400,
+            scale: { start: 0.6, end: 0 },
+            blendMode: Phaser.BlendModes.NORMAL,
+            lifespan: 500,
+            quantity: [1, 2],
+        }).setDepth(10)
+
+        this.clearParticles.addParticleProcessor(new DampenedParticleProcessor({
+            strength: 0.7,
+        }))
 
         // subscribe to update event
         // CandyGrid.attachUpdateEvent(scene, this)
@@ -68,7 +85,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         const tileDownEvent = (pointer: Phaser.Input.Pointer, tile: Tile) => {
             this.onTileDown(pointer, tile)
 
-            this.scene.time.delayedCall(100, () => {
+            this.scene.time.delayedCall(50, () => {
                 this.scene.input.once('gameobjectdown', tileDownEvent, this)
             })
         }
@@ -88,7 +105,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 case CandyGridState.CHECK:
                     this.matches = this.getMatches()
 
-                    scene.time.delayedCall(500, () => {
+                    scene.time.delayedCall(200, () => {
                         if (this.matches.length > 0) {
                             this.gridState.transition(CandyGridState.CLEAR)
                         } else {
@@ -99,9 +116,44 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                     break
 
                 case CandyGridState.CLEAR:
-                    // clear matches
-                    this.clearMatches()
+                    scene.tweens.addCounter({
+                        from: 0,
+                        to: 1,
+                        duration: 300,
+                        ease: 'Back.in',
+                        onUpdate: (tween) => {
+                            const value = tween.getValue()
 
+                            this.matches.forEach((match) => {
+                                match.sources.forEach((tile) => {
+                                    tile.setDisplaySize(
+                                        GRID_CONFIG.tileWidth * (1 - value),
+                                        GRID_CONFIG.tileHeight * (1 - value)
+                                    )
+                                })
+                            })
+                        },
+                        onComplete: () => {
+                            // clear matches
+                            this.clearMatches()
+
+                            this.matches.forEach((match) => {
+                                match.sources.forEach((tile) => {
+                                    tile.setDisplaySize(
+                                        GRID_CONFIG.tileWidth,
+                                        GRID_CONFIG.tileHeight
+                                        )
+                                    })
+                                })
+                            
+                                // transition to bubble
+                                this.gridState.transition(CandyGridState.BUBBLE)
+                        }
+                    })
+
+                    break
+
+                case CandyGridState.BUBBLE:
                     // bubble up clear event
                     this.bubbleUp()
 
@@ -143,8 +195,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             const { x, y } = this.getTopLeft()
             this.tiles.forEach((row) => {
                 row.forEach((tile) => {
-                    const tileX = (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding
-                    const tileY = (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding
+                    const tileX = (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding + this.gridConfig.tileWidth / 2
+                    const tileY = (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding + this.gridConfig.tileHeight / 2
 
                     // with padding from config
                     tile.setTargetPosition(
@@ -226,8 +278,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         const { x: gridX, y: gridY } = this.getTopLeft()
 
-        const posX = y * tileWidth + (gridX ?? 0) + this.gridConfig.padding
-        const posY = x * tileHeight + (gridY ?? 0) + this.gridConfig.padding
+        const posX = y * tileWidth + (gridX ?? 0) + this.gridConfig.padding + tileWidth / 2
+        const posY = x * tileHeight + (gridY ?? 0) + this.gridConfig.padding + tileHeight / 2
 
         // flip x and y because js array is [y][x] while phaser positioning is [x][y]
         const tile = new Tile({
@@ -373,6 +425,9 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.matches.forEach((match) => {
             match.sources.forEach((tile) => {
                 tile.clearTile()
+                
+                // emit particle
+                this.clearParticles.emitParticleAt(tile.getCenter().x, tile.getCenter().y)
             })
         })
     }

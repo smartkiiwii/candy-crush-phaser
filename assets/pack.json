@@ -60,6 +60,16 @@
         "type": "image",
         "key": "starcookie2",
         "url": "./assets/images/starcookie2.png"
+      },
+      {
+        "type": "image",
+        "key": "square",
+        "url": "./assets/shapes/square.svg"
+      },
+      {
+        "type": "image",
+        "key": "star",
+        "url": "./assets/shapes/star.svg"
       }
     ]
   }
