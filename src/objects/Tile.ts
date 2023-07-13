@@ -1,5 +1,4 @@
 import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
-import { GRID_CONFIG } from '@/constants/const'
 import { IImageConstructor } from '@/interfaces/image.interface'
 
 export class Tile extends Phaser.GameObjects.Image {
@@ -22,7 +21,7 @@ export class Tile extends Phaser.GameObjects.Image {
         this.gridX = aParams.gridX
         this.gridY = aParams.gridY
         this.isCleared = false
-        this.targetPosition = new Phaser.Math.Vector2(aParams.x, aParams.y)
+        this.targetPosition = new Phaser.Math.Vector2(aParams.tweenOriginX, aParams.tweenOriginY)
         this.tweener = new SecondOrderDynamics(this.targetPosition, {
             responseRate: 0.002,
             dampening: 0.5,
@@ -64,12 +63,15 @@ export class Tile extends Phaser.GameObjects.Image {
         this.isCleared = false
         this.setVisible(true)
 
-        // supposed to be this.targetPosition.y - GRID_CONFIG.tileHeight * (this.gridX + 1) but * 2 looks stylistically better
-        this.tweener.reset(
-            this.targetPosition
-                .clone()
-                .set(this.targetPosition.x, this.targetPosition.y - GRID_CONFIG.tileHeight * 2)
-        )
+        if (aParams.tweenOriginX !== undefined && aParams.tweenOriginY !== undefined) {
+            this.resetTweenOrigin(aParams.tweenOriginX, aParams.tweenOriginY)
+        } else {
+            this.resetTweenOrigin(this.targetPosition.x, this.targetPosition.y)
+        }
+    }
+
+    public resetTweenOrigin(x: number, y: number) {
+        this.tweener.reset(new Phaser.Math.Vector2(x, y))
     }
 
     public isSameType(tile: Tile) {

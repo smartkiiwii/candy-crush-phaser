@@ -1,5 +1,6 @@
 import StateMachine, { StateMachineEvents } from '@/classes/StateMachine'
 import { Tile } from './Tile'
+import { GRID_CONFIG } from '@/constants/const'
 
 export const CandyGridState = {
     IDLE: 'IDLE',
@@ -82,9 +83,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                     this.tileDown = null
                     this.matches = []
 
-                    // dump
-                    this.dumpTiles()
-
                     break
 
                 case CandyGridState.CHECK:
@@ -145,11 +143,16 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             const { x, y } = this.getTopLeft()
             this.tiles.forEach((row) => {
                 row.forEach((tile) => {
+                    const tileX = (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding
+                    const tileY = (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding
+
                     // with padding from config
                     tile.setTargetPosition(
-                        (x ?? 0) + tile.gridY * this.gridConfig.tileWidth + this.gridConfig.padding,
-                        (y ?? 0) + tile.gridX * this.gridConfig.tileHeight + this.gridConfig.padding
+                        tileX,
+                        tileY
                     )
+
+                    tile.resetTweenOrigin(tileX, tileY)
                 })
             })
         }
@@ -223,11 +226,16 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         const { x: gridX, y: gridY } = this.getTopLeft()
 
+        const posX = y * tileWidth + (gridX ?? 0) + this.gridConfig.padding
+        const posY = x * tileHeight + (gridY ?? 0) + this.gridConfig.padding
+
         // flip x and y because js array is [y][x] while phaser positioning is [x][y]
         const tile = new Tile({
             scene: this.scene,
-            x: y * tileWidth + (gridX ?? 0) + this.gridConfig.padding,
-            y: x * tileHeight + (gridY ?? 0) + this.gridConfig.padding,
+            x: posX,
+            y: posY,
+            tweenOriginX: posX,
+            tweenOriginY: posY,
             gridX: x,
             gridY: y,
             texture: tileType,
@@ -340,17 +348,21 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     }
 
     private fillCleared() {
-        const { gridWidth, gridHeight } = this.gridConfig
+        const { gridWidth } = this.gridConfig
 
-        for (let x = 0; x < gridHeight; x++) {
-            for (let y = 0; y < gridWidth; y++) {
+        for (let y = 0; y < gridWidth; y++) {
+            const emptyTileCount = this.tiles.reduce((acc, row) => {
+                return acc + (row[y].isCleared ? 1 : 0)
+            }, 0)
+
+            for (let x = 0; x < emptyTileCount; x++) {
                 const tile = this.tiles[x][y]
 
-                if (tile.isCleared) {
-                    tile.resetTile({
-                        texture: this.getRandTileType(),
-                    })
-                }
+                tile.resetTile({
+                    texture: this.getRandTileType(),
+                    tweenOriginX: tile.getTargetPosition().x,
+                    tweenOriginY: tile.getTargetPosition().y - emptyTileCount * GRID_CONFIG.tileHeight,
+                })
             }
         }
 
