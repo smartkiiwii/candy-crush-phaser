@@ -12,6 +12,7 @@ export class Tile extends Phaser.GameObjects.Image {
     private isLiveTweening: boolean
 
     private focusTweener: Phaser.Tweens.Tween
+    private hintTweener: Phaser.Tweens.Tween | undefined
 
     private originalScale: number
 
@@ -145,6 +146,36 @@ export class Tile extends Phaser.GameObjects.Image {
 
     public stopFocusAnimation() {
         this.focusTweener.pause()
+        this.resetTweenOrigin(this.x, this.y)
+        this.isLiveTweening = true
+    }
+
+    public playHintAnimation(other: Tile) {
+        if (this.hintTweener?.isPlaying()) {
+            throw new Error('Hint animation is already playing')
+        }
+
+        this.isLiveTweening = false
+
+        // gently push the tile 1/5 the way to the other tile
+        const targetPosition = new Phaser.Math.Vector2(
+            this.x + (other.x - this.x) * 0.1,
+            this.y + (other.y - this.y) * 0.1
+        )
+
+        this.hintTweener = this.scene.tweens.add({
+            targets: this,
+            duration: 200,
+            x: targetPosition.x,
+            y: targetPosition.y,
+            ease: 'Sine.easeOut',
+            yoyo: true,
+            repeat: -1,
+        })
+    }
+
+    public stopHintAnimation() {
+        this.hintTweener?.stop()
         this.resetTweenOrigin(this.x, this.y)
         this.isLiveTweening = true
     }

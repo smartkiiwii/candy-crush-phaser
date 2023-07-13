@@ -25,6 +25,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private tileDown: Tile | null
     private matches: Match[]
 
+    private displayingHint: boolean
+
     private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter
 
     constructor(scene: Phaser.Scene, gridConfig: GridConfig) {
@@ -63,6 +65,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridConfig = gridConfig
         this.tileDown = null
         this.matches = []
+        this.displayingHint = false
         // particle that expands quickly, slows down, and fades out
         this.clearParticles = scene.add
             .particles(0, 0, 'star', {
@@ -99,6 +102,9 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridState.onStateChange(StateMachineEvents.STATE_CHANGE, (state: CandyGridState) => {
             switch (state) {
                 case CandyGridState.IDLE:
+                    // safe to try display hint
+                    this.displayingHint = false
+
                     this.handleIdleState()
                     break
 
@@ -239,6 +245,29 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.awaitLongIdleState()
     }
 
+    private displayHint() {
+        if (this.displayingHint) return
+
+        this.displayingHint = true
+
+        console.log('display hint')
+
+        const solve = this.getFastSolve()
+
+        if (solve) {
+            solve[0].playHintAnimation(solve[1])
+            solve[1].playHintAnimation(solve[0])
+
+            const fn = () => {
+                solve.forEach((s) => {
+                    s.stopHintAnimation()
+                })
+            }
+
+            this.scene.input.once('gameobjectdown', fn)
+        }
+    }
+
     private awaitLongIdleState() {
         let stateChanged = false
 
@@ -250,6 +279,13 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.scene.time.delayedCall(5000, () => {
             if (!stateChanged) {
                 this.handleLongIdleState()
+            }
+        })
+
+        // if waited for too long with no action, display hint
+        this.scene.time.delayedCall(10000, () => {
+            if (!stateChanged) {
+                this.displayHint()
             }
         })
     }
@@ -554,5 +590,46 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
     private getMatches() {
         return [...this.getHorizontalMatches(), ...this.getVerticalMatches()]
+    }
+
+    private getFastSolve(): [Tile, Tile] | null {
+        // quickly find a solve where there is two adjacent tiles and swapping them will result in a match
+        const { gridWidth, gridHeight } = this.gridConfig
+
+        for (let x = 0; x < gridHeight; x++) {
+            for (let y = 0; y < gridWidth; y++) {
+                const tile = this.tiles[x][y]
+
+                if (x + 1 < gridHeight) {
+                    const tileRight = this.tiles[x + 1][y]
+
+                    this.swapTilesInternal(tile, tileRight)
+
+                    const matches = this.getMatches()
+
+                    this.swapTilesInternal(tile, tileRight)
+
+                    if (matches.length > 0) {
+                        return [tile, tileRight]
+                    }
+                }
+
+                if (y + 1 < gridWidth) {
+                    const tileDown = this.tiles[x][y + 1]
+
+                    this.swapTilesInternal(tile, tileDown)
+
+                    const matches = this.getMatches()
+
+                    this.swapTilesInternal(tile, tileDown)
+
+                    if (matches.length > 0) {
+                        return [tile, tileDown]
+                    }
+                }
+            }
+        }
+
+        return null
     }
 }
