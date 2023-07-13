@@ -99,10 +99,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridState.onStateChange(StateMachineEvents.STATE_CHANGE, (state: CandyGridState) => {
             switch (state) {
                 case CandyGridState.IDLE:
-                    // reset tile down
-                    this.tileDown = null
-                    this.matches = []
-
+                    this.handleIdleState()
                     break
 
                 case CandyGridState.CHECK:
@@ -218,6 +215,43 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         }
 
         return this
+    }
+
+    private handleIdleState() {
+        // reset tile down
+        this.tileDown = null
+        this.matches = []
+
+        this.awaitLongIdleState()
+    }
+
+    private handleLongIdleState() {
+        console.log('long idle')
+
+        // add shine to all tiles
+        this.tiles.forEach((row, x) => {
+            row.forEach((tile, y) => {
+                const delay = x * 100 + y * 100
+                tile.playIdleAnimation(delay)
+            })
+        })
+
+        this.awaitLongIdleState()
+    }
+
+    private awaitLongIdleState() {
+        let stateChanged = false
+
+        this.gridState.onceStateChange(StateMachineEvents.STATE_CHANGE, () => {
+            stateChanged = true
+        })
+
+        // if waited for too long with no action, handle long idle
+        this.scene.time.delayedCall(5000, () => {
+            if (!stateChanged) {
+                this.handleLongIdleState()
+            }
+        })
     }
 
     private dumpTiles() {

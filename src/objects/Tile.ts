@@ -132,6 +132,17 @@ export class Tile extends Phaser.GameObjects.Image {
             })
     }
 
+    public playIdleAnimation(delay: number) {
+        this.scene.tweens.add({
+            delay,
+            targets: this,
+            duration: 200,
+            scale: this.scale * 0.8,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+        })
+    }
+
     public stopFocusAnimation() {
         this.focusTweener.pause()
         this.resetTweenOrigin(this.x, this.y)
