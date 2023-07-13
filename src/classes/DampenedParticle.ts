@@ -24,9 +24,6 @@ export default class DampenedParticleProcessor extends Phaser.GameObjects.Partic
 
     update(
         particle: Phaser.GameObjects.Particles.Particle,
-        delta: number,
-        step: number,
-        t: number
     ): void {
         particle.velocityX *= this.strength
         particle.velocityY *= this.strength

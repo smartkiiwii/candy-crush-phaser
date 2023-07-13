@@ -54,28 +54,28 @@ export default class StateMachine<T> {
         return this.stateMap.has(state)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public onStateChange(
         event: StateMachineEvents,
         callback: (state: T, prev: T) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         context?: any
     ): void {
         this.emitter.on(event, callback, context)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public offStateChange(
         event: StateMachineEvents,
         callback: (state: T, prev: T) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         context?: any
     ): void {
         this.emitter.off(event, callback, context)
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public onceStateChange(
         event: StateMachineEvents,
         callback: (state: T, prev: T) => void,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         context?: any
     ): void {
         this.emitter.once(event, callback, context)

@@ -34,7 +34,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             gridHeight,
             tileWidth,
             tileHeight,
-            // candies,
             texture,
             frame,
             leftWidth,
@@ -85,7 +84,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         // CandyGrid.attachUpdateEvent(scene, this)
 
         // subscribe to tile down event
-
         const tileDownEvent = (pointer: Phaser.Input.Pointer, tile: Tile) => {
             this.onTileDown(pointer, tile)
 
@@ -183,8 +181,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridState.transition(CandyGridState.CHECK)
     }
 
-    onUpdate(time: number, delta: number) {
-        // console.log(time, delta)
+    onUpdate() {
+        //
     }
 
     setPosition(
@@ -254,14 +252,6 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             this.swapTilesAnimate(this.tileDown, tile)
             this.tileDown = null
         }
-    }
-
-    private tryFillClearedTiles() {
-        // bubble up clear event
-        this.bubbleUp()
-
-        // fill empty tiles
-        this.fillCleared()
     }
 
     private static attachUpdateEvent(scene: Phaser.Scene, candyGrid: CandyGrid) {

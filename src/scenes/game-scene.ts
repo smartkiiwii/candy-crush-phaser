@@ -8,7 +8,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
-        const candyGrid = this.add
+        this.add
             .candyGrid(GRID_CONFIG)
             .setPosition(this.cameras.main.centerX, this.cameras.main.centerY)
     }
