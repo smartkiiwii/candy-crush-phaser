@@ -67,8 +67,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.clearParticles = scene.add
             .particles(0, 0, 'star', {
                 emitting: false,
-                speed: 400,
-                scale: { start: 0.6, end: 0 },
+                speed: 500,
+                scale: { start: 0.8, end: 0 },
                 blendMode: Phaser.BlendModes.NORMAL,
                 lifespan: 500,
                 quantity: [1, 2],
