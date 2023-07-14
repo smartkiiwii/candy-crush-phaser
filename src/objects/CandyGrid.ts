@@ -22,7 +22,10 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private tiles: Tile[][]
     private gridState: StateMachine<CandyGridState>
     private gridConfig: GridConfig
-    private tileDown: Tile | null
+    
+    private tileDown: Tile | null // the first tile that was clicked
+    private tileSwap: Tile | null // the second tile that was clicked
+
     private matches: Match[]
 
     private tileLayer: Phaser.GameObjects.Layer
@@ -65,7 +68,10 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.gridState = new StateMachine<CandyGridState>(CandyGridState.IDLE)
         this.tiles = []
         this.gridConfig = gridConfig
+
         this.tileDown = null
+        this.tileSwap = null
+
         this.matches = []
         this.displayingHint = false
         // particle that expands quickly, slows down, and fades out
@@ -258,6 +264,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private handleIdleState() {
         // reset tile down
         this.tileDown = null
+        this.tileSwap = null
+
         this.matches = []
 
         this.awaitLongIdleState()
@@ -355,9 +363,12 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         }
 
         if (difference.gridX + difference.gridY === 1) {
+            this.tileSwap = tile
+
             this.swapTilesAnimate(this.tileDown, tile)
             this.tileDown.stopFocusAnimation()
-            this.tileDown = null
+            
+            // this.tileDown = null
         } else {
             this.tileDown.stopFocusAnimation()
             this.tileDown = tile
@@ -567,6 +578,11 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                     }
                 } else if (match.target.isSameType(tile)) {
                     match.sources.push(tile)
+
+                    // override match target if this tile is the tile the player clicked
+                    if (tile === this.tileDown || tile === this.tileSwap) {
+                        match.target = tile
+                    }
                 } else {
                     if (match.sources.length >= 3) {
                         matches.push(match)
@@ -604,6 +620,11 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                     }
                 } else if (match.target.isSameType(tile)) {
                     match.sources.push(tile)
+
+                    // override match target if this tile is the tile the player clicked
+                    if (tile === this.tileDown || tile === this.tileSwap) {
+                        match.target = tile
+                    }
                 } else {
                     if (match.sources.length >= 3) {
                         matches.push(match)
@@ -624,8 +645,28 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         return matches
     }
 
-    private getMatches() {
-        return [...this.getHorizontalMatches(), ...this.getVerticalMatches()]
+    private getMatches(): Match[] {
+        const verticalMatch = this.getVerticalMatches()
+        const horizontalMatch = this.getHorizontalMatches()
+
+        const matches = verticalMatch.concat(horizontalMatch)
+
+        // for each match, see what the target of it also belongs to, log to console
+        verticalMatch.forEach((match) => {
+            const { target } = match
+
+            const other = horizontalMatch.find((m) => {
+                return m.sources.includes(target)
+            })
+
+            // if they don't have the same target, it must be a match made not by the player
+            // set their target to be the same so that combos work the same
+            if (other && other.target !== target) {
+                other.target = target
+            }
+        })
+
+        return matches
     }
 
     private getFastSolve(): [Tile, Tile] | null {
