@@ -22,7 +22,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private tiles: Tile[][]
     private gridState: StateMachine<CandyGridState>
     private gridConfig: GridConfig
-    
+
     private tileDown: Tile | null // the first tile that was clicked
     private tileSwap: Tile | null // the second tile that was clicked
 
@@ -216,7 +216,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         if (!this.gridConfig) {
             return this
         }
-        
+
         const { x: gridPosX, y: gridPosY } = this.getTopLeft()
 
         if (this.tiles) {
@@ -246,12 +246,10 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         graphics.fillStyle(0xffffff)
         graphics.fillRect(
-            (gridPosX ?? 0),
-            (gridPosY ?? 0),
-            this.gridConfig.gridWidth * this.gridConfig.tileWidth +
-                this.gridConfig.padding * 2,
-            this.gridConfig.gridHeight * this.gridConfig.tileHeight +
-                this.gridConfig.padding * 2
+            gridPosX ?? 0,
+            gridPosY ?? 0,
+            this.gridConfig.gridWidth * this.gridConfig.tileWidth + this.gridConfig.padding * 2,
+            this.gridConfig.gridHeight * this.gridConfig.tileHeight + this.gridConfig.padding * 2
         )
 
         const mask = graphics.createGeometryMask()
@@ -278,7 +276,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         this.tiles.forEach((row, x) => {
             row.forEach((tile, y) => {
                 const delay = x * 100 + y * 100
-                tile.playIdleAnimation(delay)
+                tile.playLongIdleAnimation(delay)
             })
         })
 
@@ -299,6 +297,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             solve[1].playHintAnimation(solve[0])
 
             const fn = () => {
+                this.displayingHint = false
                 solve.forEach((s) => {
                     s.stopHintAnimation()
                 })
@@ -367,7 +366,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
             this.swapTilesAnimate(this.tileDown, tile)
             this.tileDown.stopFocusAnimation()
-            
+
             // this.tileDown = null
         } else {
             this.tileDown.stopFocusAnimation()

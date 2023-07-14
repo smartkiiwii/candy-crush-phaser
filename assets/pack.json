@@ -70,7 +70,13 @@
         "type": "image",
         "key": "star",
         "url": "./assets/shapes/star.svg"
+      },
+      {
+        "type": "image",
+        "key": "hint-arrow",
+        "url": "./assets/shapes/arrow.svg"
       }
+
     ]
   }
 }

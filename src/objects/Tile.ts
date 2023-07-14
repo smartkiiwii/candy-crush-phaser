@@ -1,20 +1,30 @@
 import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
+import StateMachine, { StateMachineEvents } from '@/classes/StateMachine'
 import { IImageConstructor } from '@/interfaces/image.interface'
+
+const TileState = {
+    IDLE: 'IDLE',
+    FOCUSED: 'FOCUSED',
+    CLEARED: 'CLEARED',
+} as const
+
+export type TileState = (typeof TileState)[keyof typeof TileState]
 
 export class Tile extends Phaser.GameObjects.Image {
     public gridX: number
     public gridY: number
-    public isCleared: boolean
 
     private tweener: SecondOrderDynamics
     private targetPosition: Phaser.Math.Vector2
 
     private isLiveTweening: boolean
+    private canBounce: boolean
 
-    private focusTweener: Phaser.Tweens.Tween
+    private focusTweener: Phaser.Tweens.Tween | undefined
     private hintTweener: Phaser.Tweens.Tween | undefined
+    private idleTweener: Phaser.Tweens.Tween | undefined
 
-    private originalScale: number
+    private tileState: StateMachine<TileState>
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
@@ -26,7 +36,7 @@ export class Tile extends Phaser.GameObjects.Image {
 
         this.gridX = aParams.gridX
         this.gridY = aParams.gridY
-        this.isCleared = false
+
         this.targetPosition = new Phaser.Math.Vector2(aParams.tweenOriginX, aParams.tweenOriginY)
         this.tweener = new SecondOrderDynamics(this.targetPosition, {
             responseRate: 0.002,
@@ -35,27 +45,12 @@ export class Tile extends Phaser.GameObjects.Image {
         })
 
         this.isLiveTweening = true
+        this.canBounce = true
 
-        this.originalScale = this.scaleX
+        this.tileState = new StateMachine<TileState>(TileState.IDLE)
 
-        this.focusTweener = this.scene.tweens.addCounter({
-            duration: 250,
-            repeat: -1,
-            yoyo: true,
-            paused: true,
-            onUpdate: (tween) => {
-                const value = tween.getValue()
-
-                this.scaleX =
-                    this.originalScale - Phaser.Math.Easing.Linear(value) * this.originalScale * 0.2
-                this.scaleY =
-                    this.originalScale +
-                    Phaser.Math.Easing.Linear(value) * this.originalScale * 0.15
-
-                this.y =
-                    this.targetPosition.y - Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * 20
-            },
-        })
+        this.tileState.onStateChange(StateMachineEvents.STATE_ENTER, this.handleTileStateEnter, this)
+        this.tileState.onStateChange(StateMachineEvents.STATE_EXIT, this.handleTileStateExit, this)
     }
 
     preUpdate(time: number, delta: number): void {
@@ -64,16 +59,79 @@ export class Tile extends Phaser.GameObjects.Image {
 
             this.setPosition(
                 newPos.x,
-                newPos.y > this.targetPosition.y
+                this.canBounce && newPos.y > this.targetPosition.y
                     ? this.targetPosition.y - (newPos.y - this.targetPosition.y)
                     : newPos.y
             )
         }
     }
 
+    private handleTileStateEnter(state: TileState) {
+        switch (state) {
+            case TileState.IDLE:
+                this.setVisible(true)
+                this.isLiveTweening = true
+                break
+
+            case TileState.FOCUSED:
+                this.isLiveTweening = false
+                this.idleTweener?.stop()
+                this.hintTweener?.stop()
+                this.launchFocusAnimation()
+                break
+
+            case TileState.CLEARED:
+                this.setVisible(false)
+                this.isLiveTweening = true
+                break
+        }
+    }
+
+    private launchFocusAnimation() {
+        const originalScale = this.scale
+
+        this.focusTweener = this.scene.tweens.addCounter({
+            duration: 250,
+            repeat: -1,
+            yoyo: true,
+            onUpdate: (tween) => {
+                const value = tween.getValue()
+
+                this.scaleX =
+                    originalScale - Phaser.Math.Easing.Linear(value) * originalScale * 0.2
+                this.scaleY =
+                    originalScale +
+                    Phaser.Math.Easing.Linear(value) * originalScale * 0.15
+
+                this.y =
+                    this.targetPosition.y - Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * 20
+            },
+            onStop: () => {
+                this.resetTweenOrigin(this.x, this.y)
+                this.scale = originalScale
+            }
+        })
+    }
+
+    private handleTileStateExit(state: TileState) {
+        switch (state) {
+            case TileState.IDLE:
+                this.idleTweener?.stop()
+                this.hintTweener?.stop()
+                break
+
+            case TileState.FOCUSED:
+                this.focusTweener?.stop()
+                break
+        }
+    }
+
     public clearTile() {
-        this.isCleared = true
-        this.setVisible(false)
+        this.tileState.transition(TileState.CLEARED)
+    }
+
+    public get isCleared(): boolean {
+        return this.tileState.getState() === TileState.CLEARED
     }
 
     public resetTile(aParams: Partial<IImageConstructor>) {
@@ -91,14 +149,13 @@ export class Tile extends Phaser.GameObjects.Image {
 
         if (aParams.frame !== undefined) this.setFrame(aParams.frame)
 
-        this.isCleared = false
-        this.setVisible(true)
-
         if (aParams.tweenOriginX !== undefined && aParams.tweenOriginY !== undefined) {
             this.resetTweenOrigin(aParams.tweenOriginX, aParams.tweenOriginY)
         } else {
             this.resetTweenOrigin(this.targetPosition.x, this.targetPosition.y)
         }
+
+        this.tileState.transition(TileState.IDLE)
     }
 
     public resetTweenOrigin(x: number, y: number) {
@@ -117,63 +174,93 @@ export class Tile extends Phaser.GameObjects.Image {
         return this.targetPosition
     }
 
-    public playFocusAnimation() {
-        const currentScale = this.scaleX
+    public playLongIdleAnimation(delay: number) {
+        if (this.idleTweener?.isPlaying()) {
+            return
+        }
 
-        this.isLiveTweening = false
+        const originalScale = this.scale
 
-        this.focusTweener
-            .seek(0)
-            .play()
-            .once(Phaser.Tweens.Events.TWEEN_PAUSE, () => {
-                this.setScale(currentScale)
+        // can only play idle in idle state, else ignore
+        if (this.tileState.getState() === TileState.IDLE) {
+            this.idleTweener = this.scene.tweens.add({
+                delay,
+                targets: this,
+                duration: 200,
+                scale: this.scale * 0.8,
+                ease: 'Sine.easeInOut',
+                yoyo: true,
+                onStop: () => {
+                    this.scale = originalScale
+                }
             })
+        }
     }
 
-    public playIdleAnimation(delay: number) {
-        this.scene.tweens.add({
-            delay,
-            targets: this,
-            duration: 200,
-            scale: this.scale * 0.8,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-        })
+    public playFocusAnimation() {
+        this.tileState.transition(TileState.FOCUSED)
     }
 
     public stopFocusAnimation() {
-        this.focusTweener.pause()
-        this.resetTweenOrigin(this.x, this.y)
-        this.isLiveTweening = true
+        if (this.tileState.getState() !== TileState.FOCUSED) {
+            console.warn('Tile is not in focus state')
+        }
+
+        this.tileState.transition(TileState.IDLE)
     }
 
     public playHintAnimation(other: Tile) {
         if (this.hintTweener?.isPlaying()) {
-            throw new Error('Hint animation is already playing')
+            console.warn('Hint animation is already playing')
         }
 
-        this.isLiveTweening = false
+        // can only play hint in idle state, else ignore
+        if (this.tileState.getState() === TileState.IDLE) {
+            const originalTargetPosition = this.targetPosition.clone()
+            const originalCanBounce = this.canBounce
 
-        // gently push the tile 1/5 the way to the other tile
-        const targetPosition = new Phaser.Math.Vector2(
-            this.x + (other.x - this.x) * 0.1,
-            this.y + (other.y - this.y) * 0.1
-        )
+            // gently push the tile towards the other tile
+            const targetPosition = new Phaser.Math.Vector2(
+                this.x + (other.x - this.x) * 0.1,
+                this.y + (other.y - this.y) * 0.1
+            )
 
-        this.hintTweener = this.scene.tweens.add({
-            targets: this,
-            duration: 200,
-            x: targetPosition.x,
-            y: targetPosition.y,
-            ease: 'Sine.easeOut',
-            yoyo: true,
-            repeat: -1,
-        })
+            this.hintTweener = this.scene.tweens.addCounter({
+                from: 0,
+                to: 1,
+                duration: 300,
+                yoyo: true,
+                repeat: -1,
+                onStart: () => {
+                    this.canBounce = false
+                },
+                onUpdate: (tween) => {
+                    const value = tween.getValue()
+
+                    if (value > 0.5) {
+                        this.setTargetPosition(
+                            targetPosition.x,
+                            targetPosition.y
+                        )
+                    } else {
+                        this.setTargetPosition(
+                            originalTargetPosition.x,
+                            originalTargetPosition.y
+                        )
+                    }
+                },
+                onStop: () => {
+                    this.canBounce = originalCanBounce
+                    this.setTargetPosition(
+                        originalTargetPosition.x,
+                        originalTargetPosition.y
+                    )
+                }
+            })
+        }
     }
 
     public stopHintAnimation() {
         this.hintTweener?.stop()
-        this.resetTweenOrigin(this.x, this.y)
-        this.isLiveTweening = true
     }
 }
