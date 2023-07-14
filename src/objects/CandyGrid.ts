@@ -105,15 +105,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         // CandyGrid.attachUpdateEvent(scene, this)
 
         // subscribe to tile down event
-        const tileDownEvent = (pointer: Phaser.Input.Pointer, tile: Tile) => {
-            this.onTileDown(pointer, tile)
-
-            this.scene.time.delayedCall(50, () => {
-                this.scene.input.once('gameobjectdown', tileDownEvent, this)
-            })
-        }
-
-        this.scene.input.once('gameobjectdown', tileDownEvent, this)
+        this.scene.input.on('gameobjectdown', this.onTileDown, this)
 
         // subscribe to state change event
         this.gridState.onStateChange(StateMachineEvents.STATE_CHANGE, (state: CandyGridState) => {
