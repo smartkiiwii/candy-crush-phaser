@@ -1,5 +1,7 @@
 export const StateMachineEvents = {
     STATE_CHANGE: 'stateChange',
+    STATE_ENTER: 'stateEnter',
+    STATE_EXIT: 'stateExit',
     STATE_RESET: 'stateReset',
 } as const
 
@@ -27,7 +29,9 @@ export default class StateMachine<T> {
     public transition(state: T): void {
         const prev = this.state
         this.state = state
-        this.emitter.emit('stateChange', state, prev)
+        this.emitter.emit(StateMachineEvents.STATE_CHANGE, state, prev)
+        this.emitter.emit(StateMachineEvents.STATE_ENTER, state, undefined)
+        this.emitter.emit(StateMachineEvents.STATE_EXIT, prev, undefined)
     }
 
     public trasitionNext(): void {
@@ -40,8 +44,8 @@ export default class StateMachine<T> {
     public resetState(): void {
         this.state = this.initialState
 
-        this.emitter.emit('stateChange', this.state)
-        this.emitter.emit('stateReset', this.state)
+        this.emitter.emit(StateMachineEvents.STATE_CHANGE, this.state)
+        this.emitter.emit(StateMachineEvents.STATE_RESET, this.state)
 
         this.emitter.removeAllListeners()
     }
@@ -54,6 +58,7 @@ export default class StateMachine<T> {
         return this.stateMap.has(state)
     }
 
+    // TODO: mark prev as can be undefined and handle it
     public onStateChange(
         event: StateMachineEvents,
         callback: (state: T, prev: T) => void,
