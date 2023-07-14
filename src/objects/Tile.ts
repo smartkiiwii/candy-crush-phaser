@@ -172,7 +172,7 @@ export class Tile extends Phaser.GameObjects.Image {
     }
 
     public isSameType(tile: Tile) {
-        return this.texture.key === tile.texture.key
+        return this.texture.key === tile.texture.key && this.frame.name === tile.frame.name
     }
 
     public setTargetPosition(x: number, y: number) {
