@@ -30,8 +30,8 @@ export default class StateMachine<T> {
         const prev = this.state
         this.state = state
         this.emitter.emit(StateMachineEvents.STATE_CHANGE, state, prev)
-        this.emitter.emit(StateMachineEvents.STATE_ENTER, state, undefined)
         this.emitter.emit(StateMachineEvents.STATE_EXIT, prev, undefined)
+        this.emitter.emit(StateMachineEvents.STATE_ENTER, state, undefined)
     }
 
     public trasitionNext(): void {
