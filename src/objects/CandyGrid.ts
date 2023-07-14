@@ -338,6 +338,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         if (this.tileDown === null) {
             this.tileDown = tile
+            this.tileLayer.bringToTop(tile)
             this.tileDown.playFocusAnimation()
             return
         }
@@ -360,6 +361,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
         } else {
             this.tileDown.stopFocusAnimation()
             this.tileDown = tile
+            this.tileLayer.bringToTop(tile)
             this.tileDown.playFocusAnimation()
         }
     }

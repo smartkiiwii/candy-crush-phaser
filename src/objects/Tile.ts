@@ -119,17 +119,14 @@ export class Tile extends Phaser.GameObjects.Image {
 
     public playFocusAnimation() {
         const currentScale = this.scaleX
-        const currentDepth = this.depth
 
         this.isLiveTweening = false
-        this.setDepth(100)
 
         this.focusTweener
             .seek(0)
             .play()
             .once(Phaser.Tweens.Events.TWEEN_PAUSE, () => {
                 this.setScale(currentScale)
-                this.setDepth(currentDepth)
             })
     }
 
