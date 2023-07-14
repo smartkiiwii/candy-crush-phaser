@@ -8,7 +8,14 @@ const TileState = {
     CLEARED: 'CLEARED',
 } as const
 
+const SpecialTileType = {
+    NONE: 'NONE',
+    BOMB: 'BOMB',
+    SEEKING_BOMB: 'SEEKING_BOMB',
+} as const
+
 export type TileState = (typeof TileState)[keyof typeof TileState]
+export type SpecialTileType = (typeof SpecialTileType)[keyof typeof SpecialTileType]
 
 export class Tile extends Phaser.GameObjects.Image {
     public gridX: number
@@ -49,7 +56,11 @@ export class Tile extends Phaser.GameObjects.Image {
 
         this.tileState = new StateMachine<TileState>(TileState.IDLE)
 
-        this.tileState.onStateChange(StateMachineEvents.STATE_ENTER, this.handleTileStateEnter, this)
+        this.tileState.onStateChange(
+            StateMachineEvents.STATE_ENTER,
+            this.handleTileStateEnter,
+            this
+        )
         this.tileState.onStateChange(StateMachineEvents.STATE_EXIT, this.handleTileStateExit, this)
     }
 
@@ -97,11 +108,9 @@ export class Tile extends Phaser.GameObjects.Image {
             onUpdate: (tween) => {
                 const value = tween.getValue()
 
-                this.scaleX =
-                    originalScale - Phaser.Math.Easing.Linear(value) * originalScale * 0.2
+                this.scaleX = originalScale - Phaser.Math.Easing.Linear(value) * originalScale * 0.2
                 this.scaleY =
-                    originalScale +
-                    Phaser.Math.Easing.Linear(value) * originalScale * 0.15
+                    originalScale + Phaser.Math.Easing.Linear(value) * originalScale * 0.15
 
                 this.y =
                     this.targetPosition.y - Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * 20
@@ -109,7 +118,7 @@ export class Tile extends Phaser.GameObjects.Image {
             onStop: () => {
                 this.resetTweenOrigin(this.x, this.y)
                 this.scale = originalScale
-            }
+            },
         })
     }
 
@@ -192,7 +201,7 @@ export class Tile extends Phaser.GameObjects.Image {
                 yoyo: true,
                 onStop: () => {
                     this.scale = originalScale
-                }
+                },
             })
         }
     }
@@ -238,24 +247,15 @@ export class Tile extends Phaser.GameObjects.Image {
                     const value = tween.getValue()
 
                     if (value > 0.5) {
-                        this.setTargetPosition(
-                            targetPosition.x,
-                            targetPosition.y
-                        )
+                        this.setTargetPosition(targetPosition.x, targetPosition.y)
                     } else {
-                        this.setTargetPosition(
-                            originalTargetPosition.x,
-                            originalTargetPosition.y
-                        )
+                        this.setTargetPosition(originalTargetPosition.x, originalTargetPosition.y)
                     }
                 },
                 onStop: () => {
                     this.canBounce = originalCanBounce
-                    this.setTargetPosition(
-                        originalTargetPosition.x,
-                        originalTargetPosition.y
-                    )
-                }
+                    this.setTargetPosition(originalTargetPosition.x, originalTargetPosition.y)
+                },
             })
         }
     }

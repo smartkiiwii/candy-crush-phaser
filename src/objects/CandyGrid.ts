@@ -105,7 +105,10 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
         const mask = graphics.createGeometryMask()
 
-        this.tileLayer = scene.add.layer().setMask(mask).setDepth(this.depth + 1)
+        this.tileLayer = scene.add
+            .layer()
+            .setMask(mask)
+            .setDepth(this.depth + 1)
 
         // subscribe to update event
         // CandyGrid.attachUpdateEvent(scene, this)
