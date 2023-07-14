@@ -25,6 +25,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     private tileDown: Tile | null
     private matches: Match[]
 
+    private tileLayer: Phaser.GameObjects.Layer
+
     private displayingHint: boolean
 
     private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter
@@ -83,6 +85,21 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 strength: 0.7,
             })
         )
+
+        // create mask to hide tiles outside of grid
+        const graphics = scene.make.graphics()
+
+        graphics.fillStyle(0xffffff)
+        graphics.fillRect(
+            x,
+            y,
+            gridWidth * tileWidth + gridConfig.padding * 2,
+            gridHeight * tileHeight + gridConfig.padding * 2
+        )
+
+        const mask = graphics.createGeometryMask()
+
+        this.tileLayer = scene.add.layer().setMask(mask).setDepth(this.depth + 1)
 
         // subscribe to update event
         // CandyGrid.attachUpdateEvent(scene, this)
@@ -197,17 +214,23 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
     ): this {
         super.setPosition(x, y, z, w)
 
+        // object has not been initialized yet
+        if (!this.gridConfig) {
+            return this
+        }
+        
+        const { x: gridPosX, y: gridPosY } = this.getTopLeft()
+
         if (this.tiles) {
-            const { x, y } = this.getTopLeft()
             this.tiles.forEach((row) => {
                 row.forEach((tile) => {
                     const tileX =
-                        (x ?? 0) +
+                        (gridPosX ?? 0) +
                         tile.gridY * this.gridConfig.tileWidth +
                         this.gridConfig.padding +
                         this.gridConfig.tileWidth / 2
                     const tileY =
-                        (y ?? 0) +
+                        (gridPosY ?? 0) +
                         tile.gridX * this.gridConfig.tileHeight +
                         this.gridConfig.padding +
                         this.gridConfig.tileHeight / 2
@@ -219,6 +242,23 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 })
             })
         }
+
+        // re-create mask
+        const graphics = this.scene.make.graphics()
+
+        graphics.fillStyle(0xffffff)
+        graphics.fillRect(
+            (gridPosX ?? 0),
+            (gridPosY ?? 0),
+            this.gridConfig.gridWidth * this.gridConfig.tileWidth +
+                this.gridConfig.padding * 2,
+            this.gridConfig.gridHeight * this.gridConfig.tileHeight +
+                this.gridConfig.padding * 2
+        )
+
+        const mask = graphics.createGeometryMask()
+
+        this.tileLayer.setMask(mask)
 
         return this
     }
@@ -368,7 +408,9 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             gridX: x,
             gridY: y,
             texture: tileType,
-        }).setDepth(this.depth + 1)
+        })
+
+        this.tileLayer.add(tile)
 
         this.addTile(x, y, tile)
     }
