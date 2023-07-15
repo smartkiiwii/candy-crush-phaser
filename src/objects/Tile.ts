@@ -1,5 +1,7 @@
+import DampenedParticleProcessor from '@/classes/DampenedParticle'
 import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
 import StateMachine, { StateMachineEvents } from '@/classes/StateMachine'
+import { GRID_CONFIG } from '@/constants/const'
 import { IImageConstructor } from '@/interfaces/image.interface'
 
 const TileState = {
@@ -8,7 +10,7 @@ const TileState = {
     CLEARED: 'CLEARED',
 } as const
 
-const SpecialTileType = {
+export const SpecialTileType = {
     NONE: 'NONE',
     BOMB: 'BOMB',
     SEEKING_BOMB: 'SEEKING_BOMB',
@@ -21,6 +23,7 @@ export class Tile extends Phaser.GameObjects.Image {
     public gridX: number
     public gridY: number
 
+    private id: string
     private tweener: SecondOrderDynamics
     private targetPosition: Phaser.Math.Vector2
 
@@ -32,9 +35,14 @@ export class Tile extends Phaser.GameObjects.Image {
     private idleTweener: Phaser.Tweens.Tween | undefined
 
     private tileState: StateMachine<TileState>
+    private specialTileType: StateMachine<SpecialTileType>
+
+    private specialEmitter: Phaser.GameObjects.Particles.ParticleEmitter
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
+
+        this.id = aParams.frame?.toString() ?? aParams.texture
 
         // set image settings
         this.setInteractive()
@@ -54,7 +62,24 @@ export class Tile extends Phaser.GameObjects.Image {
         this.isLiveTweening = true
         this.canBounce = true
 
+        this.specialEmitter = this.scene.add.particles(0, 0, 'particle-anger', {
+            emitting: false,
+            follow: this,
+            scale: {start: 1.5, end: 0},
+            speed: 400,
+            lifespan: 500,
+            frequency: 200,
+            quantity: 1,
+            rotate: { min: 0, max: 360 },
+            radial: true,
+        }).setDepth(100)
+
+        this.specialEmitter.addParticleProcessor(new DampenedParticleProcessor({
+            strength: 0.7,
+        }))
+
         this.tileState = new StateMachine<TileState>(TileState.IDLE)
+        this.specialTileType = new StateMachine<SpecialTileType>(SpecialTileType.NONE)
 
         this.tileState.onStateChange(
             StateMachineEvents.STATE_ENTER,
@@ -62,6 +87,31 @@ export class Tile extends Phaser.GameObjects.Image {
             this
         )
         this.tileState.onStateChange(StateMachineEvents.STATE_EXIT, this.handleTileStateExit, this)
+
+        this.specialTileType.onStateChange(StateMachineEvents.STATE_ENTER, (state) => {
+            switch (state) {
+                case SpecialTileType.BOMB:
+                    this.specialEmitter.start()
+
+                    break
+                
+                case SpecialTileType.SEEKING_BOMB:
+                    if (this.specialEmitter.emitting) {
+                        this.specialEmitter.stop()
+                    }
+
+                    this.setFrame('box')
+                    break
+
+                case SpecialTileType.NONE:
+                    if (this.specialEmitter.emitting) {
+                        this.specialEmitter.stop()
+                    }
+
+                    this.setFrame(this.id)
+                    break
+            }
+        })
     }
 
     preUpdate(time: number, delta: number): void {
@@ -164,6 +214,7 @@ export class Tile extends Phaser.GameObjects.Image {
             this.resetTweenOrigin(this.targetPosition.x, this.targetPosition.y)
         }
 
+        this.id = aParams.frame?.toString() ?? aParams.texture ?? this.id
         this.tileState.transition(TileState.IDLE)
     }
 
@@ -172,7 +223,7 @@ export class Tile extends Phaser.GameObjects.Image {
     }
 
     public isSameType(tile: Tile) {
-        return this.texture.key === tile.texture.key && this.frame.name === tile.frame.name
+        return this.id === tile.id
     }
 
     public setTargetPosition(x: number, y: number) {
@@ -262,5 +313,9 @@ export class Tile extends Phaser.GameObjects.Image {
 
     public stopHintAnimation() {
         this.hintTweener?.stop()
+    }
+
+    public setSpecialTileType(tileType: SpecialTileType) {
+        this.specialTileType.transition(tileType)
     }
 }

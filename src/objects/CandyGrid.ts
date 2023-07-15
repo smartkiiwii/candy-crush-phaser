@@ -1,5 +1,5 @@
 import StateMachine, { StateMachineEvents } from '@/classes/StateMachine'
-import { Tile } from './Tile'
+import { Tile, SpecialTileType } from './Tile'
 import { GRID_CONFIG } from '@/constants/const'
 import DampenedParticleProcessor from '@/classes/DampenedParticle'
 
@@ -414,7 +414,8 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
             tweenOriginY: posY,
             gridX: x,
             gridY: y,
-            texture: tileType,
+            texture: 'candies',
+            frame: tileType
         })
 
         this.tileLayer.add(tile)
@@ -541,7 +542,7 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
                 const tile = this.tiles[x][y]
 
                 tile.resetTile({
-                    texture: this.getRandTileType(),
+                    frame: this.getRandTileType(),
                     tweenOriginX: tile.getTargetPosition().x,
                     tweenOriginY:
                         tile.getTargetPosition().y - emptyTileCount * GRID_CONFIG.tileHeight,
@@ -554,8 +555,15 @@ export default class CandyGrid extends Phaser.GameObjects.NineSlice implements I
 
     private clearMatches() {
         this.matches.forEach((match) => {
+            const size = match.sources.length
             match.sources.forEach((tile) => {
-                tile.clearTile()
+                if (size > 4 && tile === match.target) {
+                    tile.setSpecialTileType(SpecialTileType.SEEKING_BOMB)
+                } else if (size > 3 && tile === match.target) {
+                    tile.setSpecialTileType(SpecialTileType.BOMB)
+                } else {
+                    tile.clearTile()
+                }
 
                 // emit particle
                 this.clearParticles.emitParticleAt(tile.getCenter().x, tile.getCenter().y)

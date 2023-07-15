@@ -63,6 +63,11 @@
       },
       {
         "type": "image",
+        "key": "special-1",
+        "url": "./assets/images/box.png"
+      },
+      {
+        "type": "image",
         "key": "square",
         "url": "./assets/shapes/square.svg"
       },
@@ -75,8 +80,18 @@
         "type": "image",
         "key": "hint-arrow",
         "url": "./assets/shapes/arrow.svg"
+      },
+      {
+        "type": "atlas",
+        "key": "candies",
+        "textureURL": "./assets/sprites/spritesheets/candies.png",
+        "atlasURL": "./assets/sprites/spritesheets/candies.json"
+      },
+      {
+        "type": "image",
+        "key": "particle-anger",
+        "url": "./assets/images/anger.png"
       }
-
     ]
   }
 }
