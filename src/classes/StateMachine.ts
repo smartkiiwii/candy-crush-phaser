@@ -11,34 +11,46 @@ export default class StateMachine<T> {
     private initialState: T
     private state: T
     private emitter: Phaser.Events.EventEmitter
-    private stateMap: Map<T, T>
+    private stateMap: Map<T, T[]> | null
 
-    constructor(initialState: T) {
+    constructor(initialState: T, directedGraph?: Map<T, T[]>) {
         this.initialState = initialState
         this.state = initialState
         this.emitter = new Phaser.Events.EventEmitter()
-        this.stateMap = new Map<T, T>()
-
-        this.stateMap.set(initialState, initialState)
+        this.stateMap = directedGraph ?? null
     }
 
     public getState(): T {
         return this.state
     }
 
+    public transitionIfValid(state: T): boolean {
+        if (!this.stateMap) {
+            this.transition(state)
+            return true
+        }
+
+        const possibleStates = this.stateMap.get(this.state) as T[]
+        
+        if (possibleStates === undefined) {
+            throw new Error(`State ${state} is not in the state map`)
+        }
+
+        if (!possibleStates.includes(state)) {
+            return false
+        }            
+
+        this.transition(state)
+        return true
+    }
+
     public transition(state: T): void {
         const prev = this.state
+        
         this.state = state
         this.emitter.emit(StateMachineEvents.STATE_CHANGE, state, prev)
         this.emitter.emit(StateMachineEvents.STATE_EXIT, prev, undefined)
         this.emitter.emit(StateMachineEvents.STATE_ENTER, state, undefined)
-    }
-
-    public trasitionNext(): void {
-        if (this.stateMap.has(this.state)) {
-            const nextState = this.stateMap.get(this.state) as T
-            this.transition(nextState)
-        }
     }
 
     public resetState(): void {
@@ -55,7 +67,7 @@ export default class StateMachine<T> {
     }
 
     public canTransitionTo(state: T): boolean {
-        return this.stateMap.has(state)
+        return this.stateMap?.has(state) ?? true
     }
 
     // TODO: mark prev as can be undefined and handle it
