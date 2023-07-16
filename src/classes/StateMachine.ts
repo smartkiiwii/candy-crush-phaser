@@ -23,6 +23,13 @@ export default class StateMachine<T> {
     public getState(): T {
         return this.state
     }
+    public getNextStates(): T[] {
+        if (!this.stateMap) {
+            throw new Error('State map is not defined')
+        }
+
+        return this.stateMap.get(this.state) as T[]
+    }
 
     public transitionIfValid(state: T): boolean {
         if (!this.stateMap) {
