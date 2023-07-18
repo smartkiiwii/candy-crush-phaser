@@ -10,10 +10,7 @@ export default class ClearState extends TileState {
     public specialClearEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null
     public explosionEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null
 
-    constructor(
-        tile: Tile,
-        config?: Omit<AnimationStateConfig, 'name'>
-    ) {
+    constructor(tile: Tile, config?: Omit<AnimationStateConfig, 'name'>) {
         super(tile, {
             ...config,
             name: 'clear',
@@ -53,19 +50,29 @@ export default class ClearState extends TileState {
             duration: 300,
             onStart: () => {
                 if (this.clearTarget !== this.tile) {
-                    this.specialClearEmitter?.emitParticleAt(this.tile.getCenter().x, this.tile.getCenter().y)
+                    this.specialClearEmitter?.emitParticleAt(
+                        this.tile.getCenter().x,
+                        this.tile.getCenter().y
+                    )
                 }
 
                 if (this.tile.getSpecialType() === SpecialType.SMALL_EXPLOSION) {
                     this.tile.scene.cameras.main.shake(100, 0.01)
-                    this.explosionEmitter?.emitParticleAt(this.tile.getCenter().x, this.tile.getCenter().y, 50)
-                }
-                
-                if (this.tile.getSpecialType() === SpecialType.BIG_EXPLOSION) {
-                    this.tile.scene.cameras.main.shake(500, 0.02)
-                    this.explosionEmitter?.emitParticleAt(this.tile.getCenter().x, this.tile.getCenter().y, 100)
+                    this.explosionEmitter?.emitParticleAt(
+                        this.tile.getCenter().x,
+                        this.tile.getCenter().y,
+                        50
+                    )
                 }
 
+                if (this.tile.getSpecialType() === SpecialType.BIG_EXPLOSION) {
+                    this.tile.scene.cameras.main.shake(500, 0.02)
+                    this.explosionEmitter?.emitParticleAt(
+                        this.tile.getCenter().x,
+                        this.tile.getCenter().y,
+                        100
+                    )
+                }
             },
             onUpdate: (tweener) => {
                 const value = tweener.getValue()
@@ -79,7 +86,10 @@ export default class ClearState extends TileState {
             },
             onComplete: () => {
                 if (this.clearTarget === this.tile) {
-                    this.clearEmitter?.emitParticleAt(this.tile.getCenter().x, this.tile.getCenter().y)
+                    this.clearEmitter?.emitParticleAt(
+                        this.tile.getCenter().x,
+                        this.tile.getCenter().y
+                    )
                 }
 
                 this.tile.scale = ogScale

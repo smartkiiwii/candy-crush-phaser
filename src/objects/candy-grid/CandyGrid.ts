@@ -141,7 +141,6 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             this.playHint()
             this.lastInteraction = this.scene.time.now
         }
-
     }
 
     private bubbleUp() {
@@ -274,14 +273,16 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         for (let x = 0; x < this.config.gridHeight; x++) {
             grid.push([])
             for (let y = 0; y < this.config.gridWidth; y++) {
-                const rect = this.scene.add.rectangle(
-                    y * tileWidth + padding + tileWidth / 2,
-                    x * tileHeight + padding + tileHeight / 2,
-                    tileWidth,
-                    tileHeight,
-                    0xffffff,
-                    1
-                ).setAlpha(0)
+                const rect = this.scene.add
+                    .rectangle(
+                        y * tileWidth + padding + tileWidth / 2,
+                        x * tileHeight + padding + tileHeight / 2,
+                        tileWidth,
+                        tileHeight,
+                        0xffffff,
+                        1
+                    )
+                    .setAlpha(0)
 
                 grid[x].push(rect)
             }
@@ -459,7 +460,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         const startY = Phaser.Math.Between(0, this.config.gridWidth - 1)
 
         let solve = this.findSolve(startX, startY)
-        
+
         if (!solve) {
             // second pass: start finding solve at 0
             solve = this.findSolve(0, 0)
@@ -476,7 +477,10 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         // tween alpha of bg tiles at same position
         this.scene.tweens.add({
-            targets: [this.bgTiles[tile1.gridCoords.x][tile1.gridCoords.y], this.bgTiles[tile2.gridCoords.x][tile2.gridCoords.y]],
+            targets: [
+                this.bgTiles[tile1.gridCoords.x][tile1.gridCoords.y],
+                this.bgTiles[tile2.gridCoords.x][tile2.gridCoords.y],
+            ],
             alpha: 0.5,
             scaleX: horizontal ? 2 : 1,
             scaleY: horizontal ? 1 : 2,
@@ -501,7 +505,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
                 if (tile1 && tile2) {
                     this.swapTilesInternal(tile1, tile2)
-                    
+
                     const temp = tile1.gridCoords.clone()
                     tile1.gridCoords.copy(tile2.gridCoords)
                     tile2.gridCoords.copy(temp)

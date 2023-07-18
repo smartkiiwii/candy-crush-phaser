@@ -16,7 +16,7 @@ export const SpecialType = {
     BIG_EXPLOSION: 'BIG_EXPLOSION',
 } as const
 
-export type SpecialType = typeof SpecialType[keyof typeof SpecialType]
+export type SpecialType = (typeof SpecialType)[keyof typeof SpecialType]
 
 export interface TileConfig {
     id: string
@@ -150,7 +150,12 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.animator = new AnimationController(this.idleState, animMap)
 
         this.specialType = SpecialType.NONE
-        this.specialTileFX = scene.add.image(0, 0, 'shine').setScale(1.3).setTint(0xffff00).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+        this.specialTileFX = scene.add
+            .image(0, 0, 'shine')
+            .setScale(1.3)
+            .setTint(0xffff00)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setVisible(false)
         scene.add.tween({
             targets: this.specialTileFX,
             duration: 20000,
@@ -164,12 +169,24 @@ export default class Tile extends Phaser.GameObjects.Image {
             repeat: -1,
             yoyo: true,
             alpha: 0.9,
-            scale: 1.1
+            scale: 1.1,
         })
     }
 
     reset(config: TileConfig, resetAnimator = false, attemptClear = false) {
-        const { id, grid, clearParticles, specialParticles, explosionParticles, x, y, gridX, gridY, texture, frame } = config
+        const {
+            id,
+            grid,
+            clearParticles,
+            specialParticles,
+            explosionParticles,
+            x,
+            y,
+            gridX,
+            gridY,
+            texture,
+            frame,
+        } = config
 
         this.setVisible(true)
 
@@ -321,7 +338,6 @@ export default class Tile extends Phaser.GameObjects.Image {
 
                 source.clearState.clearTarget = size > 3 ? match.target : source
                 source.setClearing()
-                
             })
         })
 
@@ -396,7 +412,7 @@ export default class Tile extends Phaser.GameObjects.Image {
                 const temp = this.gridCoords.clone()
                 this.gridCoords.copy(tile.gridCoords)
                 tile.gridCoords.copy(temp)
-                
+
                 // if either is a special type of big explosion, clear it without having to check for clearables
                 if (this.specialType === SpecialType.BIG_EXPLOSION) {
                     this.setClearing()
