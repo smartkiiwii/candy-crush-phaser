@@ -244,8 +244,8 @@ export default class Tile extends Phaser.GameObjects.Image {
 
         // move special tile fx to the center of the tile
         this.specialTileFX.setPosition(
-            this.getCenter(undefined, true).x,
-            this.getCenter(undefined, true).y
+            this.getCenter().x ?? 0 * (this.parentContainer?.scaleX ?? 1),
+            this.getCenter().y ?? 0 * (this.parentContainer?.scaleY ?? 1),
         )
     }
 
