@@ -1,5 +1,5 @@
-import { AnimationState, AnimationStateConfig } from "@/classes/AnimationController"
-import Tile from "../Tile"
+import { AnimationState, AnimationStateConfig } from '@/classes/AnimationController'
+import Tile from '../Tile'
 
 export default class TileState extends AnimationState {
     protected tile: Tile

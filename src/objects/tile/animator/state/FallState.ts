@@ -1,8 +1,8 @@
-import Tile from "@/objects/tile/Tile"
-import TileState from "../TileState"
-import { GRID_CONFIG } from "@/constants/const"
-import { AnimationStateConfig } from "@/classes/AnimationController"
-import SecondOrderDynamics from "@/classes/SecondOrderDynamics"
+import Tile from '@/objects/tile/Tile'
+import TileState from '../TileState'
+import { GRID_CONFIG } from '@/constants/const'
+import { AnimationStateConfig } from '@/classes/AnimationController'
+import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
 
 import Vector2 = Phaser.Math.Vector2
 
@@ -11,10 +11,10 @@ export default class FallState extends TileState {
     private targetPos: Vector2
     private maxTargetReachedTime: number
 
-    constructor(tile: Tile, config?: Omit<AnimationStateConfig, "name">) {
+    constructor(tile: Tile, config?: Omit<AnimationStateConfig, 'name'>) {
         super(tile, {
             ...config,
-            name: "fall",
+            name: 'fall',
             onEnter: (state) => {
                 config?.onEnter?.(state)
                 tile.tileEvents.emit('fall:start')
@@ -23,7 +23,8 @@ export default class FallState extends TileState {
                 config?.onExit?.(state)
                 tile.tileEvents.emit('fall:stop')
             },
-            exitCondition: () => this.maxTargetReachedTime > 100 && (config?.exitCondition?.() ?? true)
+            exitCondition: () =>
+                this.maxTargetReachedTime > 100 && (config?.exitCondition?.() ?? true),
         })
 
         this.targetPos = new Vector2(tile.x, tile.y)
@@ -48,14 +49,20 @@ export default class FallState extends TileState {
         super.update(time, delta)
 
         this.targetPos.set(
-            this.tile.gridCoords.y * GRID_CONFIG.tileWidth + GRID_CONFIG.padding + GRID_CONFIG.tileWidth / 2,
-            this.tile.gridCoords.x * GRID_CONFIG.tileHeight + GRID_CONFIG.padding + GRID_CONFIG.tileHeight / 2
+            this.tile.gridCoords.y * GRID_CONFIG.tileWidth +
+                GRID_CONFIG.padding +
+                GRID_CONFIG.tileWidth / 2,
+            this.tile.gridCoords.x * GRID_CONFIG.tileHeight +
+                GRID_CONFIG.padding +
+                GRID_CONFIG.tileHeight / 2
         )
 
         const newPos = this.tweener.update(delta, this.targetPos)
         this.tile.setPosition(
             newPos.x,
-            newPos.y > this.targetPos.y ? this.targetPos.y - (newPos.y - this.targetPos.y) : newPos.y
+            newPos.y > this.targetPos.y
+                ? this.targetPos.y - (newPos.y - this.targetPos.y)
+                : newPos.y
         )
 
         // check if target reached

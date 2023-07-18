@@ -1,4 +1,4 @@
-import StateMachine from "./StateMachine"
+import StateMachine from './StateMachine'
 
 export interface AnimationStateConfig {
     name: string
@@ -22,7 +22,7 @@ export abstract class AnimationState {
         this.enterCondition = config.enterCondition ?? null
         this.exitCondition = config.exitCondition ?? null
     }
-    
+
     enter() {
         if (this.onEnter) {
             this.onEnter(this)
@@ -57,8 +57,10 @@ export abstract class AnimationState {
     private exitCondition: (() => boolean) | null
 }
 export default class AnimationController extends StateMachine<AnimationState> {
-    
-    constructor(initialState: AnimationState, directedGraph: Map<AnimationState, AnimationState[]>) {
+    constructor(
+        initialState: AnimationState,
+        directedGraph: Map<AnimationState, AnimationState[]>
+    ) {
         AnimationController.validateDirectedGraph(initialState, directedGraph)
         super(initialState, directedGraph)
 
@@ -77,8 +79,8 @@ export default class AnimationController extends StateMachine<AnimationState> {
     public update(time: number, delta: number): void {
         // checks if the state can exit
         if (this.getState().canExit()) {
-            const next = this.getNextStates()?.find(state => state.canEnter())
-    
+            const next = this.getNextStates()?.find((state) => state.canEnter())
+
             // checks if there are next states and
             // get first state that can enter
             if (next) {
@@ -96,18 +98,20 @@ export default class AnimationController extends StateMachine<AnimationState> {
         this.getState().enter()
     }
 
-    private static validateDirectedGraph(initialState: AnimationState, directedGraph: Map<AnimationState, AnimationState[]>) {
-
+    private static validateDirectedGraph(
+        initialState: AnimationState,
+        directedGraph: Map<AnimationState, AnimationState[]>
+    ) {
         // all state have to have a unique name
         const states = Array.from(directedGraph.keys())
-        const names = states.map(state => state.name)
+        const names = states.map((state) => state.name)
         if (new Set(names).size !== names.length) {
-            throw new Error("All states have to have a unique name")
+            throw new Error('All states have to have a unique name')
         }
 
         // all states have to be in the directed graph
         if (!states.includes(initialState)) {
-            throw new Error("Initial state has to be in the directed graph")
+            throw new Error('Initial state has to be in the directed graph')
         }
 
         for (const state of states) {
@@ -115,7 +119,7 @@ export default class AnimationController extends StateMachine<AnimationState> {
             if (nextStates) {
                 for (const nextState of nextStates) {
                     if (!states.includes(nextState)) {
-                        throw new Error("All states have to be in the directed graph")
+                        throw new Error('All states have to be in the directed graph')
                     }
                 }
             }

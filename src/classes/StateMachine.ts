@@ -38,14 +38,14 @@ export default class StateMachine<T> {
         }
 
         const possibleStates = this.stateMap.get(this.state) as T[]
-        
+
         if (possibleStates === undefined) {
             throw new Error(`State ${state} is not in the state map`)
         }
 
         if (!possibleStates.includes(state)) {
             return false
-        }            
+        }
 
         this.transition(state)
         return true
@@ -53,7 +53,7 @@ export default class StateMachine<T> {
 
     public transition(state: T): void {
         const prev = this.state
-        
+
         this.state = state
         this.emitter.emit(StateMachineEvents.STATE_CHANGE, state, prev)
         this.emitter.emit(StateMachineEvents.STATE_EXIT, prev, undefined)

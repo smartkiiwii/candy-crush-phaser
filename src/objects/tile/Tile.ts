@@ -42,14 +42,20 @@ export default class Tile extends Phaser.GameObjects.Image {
     private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter | null
 
     /**
-     * 
+     *
      * @param scene The Scene to which this Game Object belongs. A Game Object can only belong to one Scene at a time.
      * @param x The horizontal position of this Game Object in the world.
      * @param y The vertical position of this Game Object in the world.
      * @param texture The key, or instance of the Texture this Game Object will use to render with, as stored in the Texture Manager.
      * @param frame An optional frame from the Texture this Game Object is rendering with.
      */
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string, frame?: string | number) {
+    constructor(
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        texture: string,
+        frame?: string | number
+    ) {
         super(scene, x, y, texture, frame)
 
         this.clearParticles = null
@@ -80,7 +86,7 @@ export default class Tile extends Phaser.GameObjects.Image {
                 if (this.grid) {
                     // try clear adjacent tiles
                     const neighbours = this.grid.getNeighboursOf(this)
-                    neighbours.forEach(neighbour => {
+                    neighbours.forEach((neighbour) => {
                         neighbour.tryClear()
                     })
                 }
@@ -113,9 +119,9 @@ export default class Tile extends Phaser.GameObjects.Image {
                 if (above) {
                     above.setFalling()
                 }
-            }
+            },
         })
-        
+
         const animMap = new Map<TileState, TileState[]>()
         animMap.set(this.idleState, [fallState, focusState, hintState, this.clearState])
         animMap.set(fallState, [this.clearState, this.idleState])
@@ -139,7 +145,7 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.clearParticles = clearParticles
 
         this.setPosition(x, y)
-        
+
         if (this.texture.key !== texture) {
             this.setTexture(texture)
         }
@@ -159,10 +165,10 @@ export default class Tile extends Phaser.GameObjects.Image {
 
         if (attemptClear) {
             this.tryClear()
-    
+
             // try clear adjacent tiles
             const neighbours = this.grid.getNeighboursOf(this)
-            neighbours.forEach(neighbour => {
+            neighbours.forEach((neighbour) => {
                 neighbour.tryClear()
             })
         }
@@ -176,7 +182,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     setFocused(focused = true) {
         if (!this.active) {
-            throw new Error("Tile: cannot set focus on inactive tile")
+            throw new Error('Tile: cannot set focus on inactive tile')
         }
 
         this.isFocused = focused
@@ -184,7 +190,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     setFalling() {
         if (!this.active) {
-            throw new Error("Tile: cannot set falling on inactive tile")
+            throw new Error('Tile: cannot set falling on inactive tile')
         }
 
         this.isFalling = true
@@ -192,7 +198,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     setHinting() {
         if (!this.active) {
-            throw new Error("Tile: cannot set hinting on inactive tile")
+            throw new Error('Tile: cannot set hinting on inactive tile')
         }
 
         this.isHinting = true
@@ -200,11 +206,11 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     setClearing(clearing = true) {
         if (!this.active) {
-            throw new Error("Tile: cannot set clearing on inactive tile")
+            throw new Error('Tile: cannot set clearing on inactive tile')
         }
 
         if (!this.grid) {
-            throw new Error("Tile: cannot clear tile without grid")
+            throw new Error('Tile: cannot clear tile without grid')
         }
 
         this.clearState.emitter = this.clearParticles
@@ -215,11 +221,11 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     tryClear(): Tile[] {
         if (!this.active) {
-            throw new Error("Tile: cannot clear inactive tile")
+            throw new Error('Tile: cannot clear inactive tile')
         }
 
         if (!this.grid) {
-            throw new Error("Tile: cannot clear tile without grid")
+            throw new Error('Tile: cannot clear tile without grid')
         }
 
         if (!this.isReady()) {
@@ -231,15 +237,15 @@ export default class Tile extends Phaser.GameObjects.Image {
         if (matches.length > 0) {
             // this.setClearing()
 
-            matches.forEach(match => {
+            matches.forEach((match) => {
                 const size = match.sources.length
-                match.sources.forEach(source => {
+                match.sources.forEach((source) => {
                     source.clearState.clearTarget = size > 3 ? match.target : source
                     source.setClearing()
                 })
             })
 
-            return matches.flatMap(match => match.sources)
+            return matches.flatMap((match) => match.sources)
         }
 
         return []
@@ -247,7 +253,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     tryPlayLongIdle(delay: number) {
         if (!this.active) {
-            throw new Error("Tile: cannot play long idle on inactive tile")
+            throw new Error('Tile: cannot play long idle on inactive tile')
         }
 
         if (this.animator.getState().name === 'idle') {
@@ -261,19 +267,19 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     trySwapClear(tile: Tile) {
         if (!this.active) {
-            throw new Error("Tile: cannot swap inactive tile")
+            throw new Error('Tile: cannot swap inactive tile')
         }
 
         if (!tile.active) {
-            throw new Error("Tile: cannot swap with inactive tile")
+            throw new Error('Tile: cannot swap with inactive tile')
         }
 
         if (!this.grid) {
-            throw new Error("Tile: cannot swap tile without grid")
+            throw new Error('Tile: cannot swap tile without grid')
         }
 
         if (!tile.grid) {
-            throw new Error("Tile: cannot swap tile without grid")
+            throw new Error('Tile: cannot swap tile without grid')
         }
 
         const thisPos = new Vector2(this.x, this.y)
@@ -292,22 +298,22 @@ export default class Tile extends Phaser.GameObjects.Image {
             },
             onUpdate: (tween) => {
                 const value = tween.getValue()
-                
+
                 this.setPosition(
                     Phaser.Math.Interpolation.Bezier([thisPos.x, tilePos.x], value),
-                    Phaser.Math.Interpolation.Bezier([thisPos.y, tilePos.y], value),
+                    Phaser.Math.Interpolation.Bezier([thisPos.y, tilePos.y], value)
                 )
 
                 tile.setPosition(
                     Phaser.Math.Interpolation.Bezier([tilePos.x, thisPos.x], value),
-                    Phaser.Math.Interpolation.Bezier([tilePos.y, thisPos.y], value),
+                    Phaser.Math.Interpolation.Bezier([tilePos.y, thisPos.y], value)
                 )
             },
             onComplete: () => {
                 if (!this.grid) {
-                    throw new Error("Tile: cannot swap tile without grid")
+                    throw new Error('Tile: cannot swap tile without grid')
                 }
-                
+
                 this.grid.swapTilesInternal(this, tile)
 
                 const temp = this.gridCoords.clone()
@@ -324,29 +330,27 @@ export default class Tile extends Phaser.GameObjects.Image {
                     this.gridCoords.copy(tile.gridCoords)
                     tile.gridCoords.copy(temp)
 
-
                     // play swap animation
                     this.scene.tweens.addCounter({
                         duration: 200,
                         ease: Phaser.Math.Easing.Sine.InOut,
                         onUpdate: (tween) => {
                             const value = tween.getValue()
-                            
+
                             this.setPosition(
                                 Phaser.Math.Interpolation.Bezier([tilePos.x, thisPos.x], value),
-                                Phaser.Math.Interpolation.Bezier([tilePos.y, thisPos.y], value),
+                                Phaser.Math.Interpolation.Bezier([tilePos.y, thisPos.y], value)
                             )
-    
+
                             tile.setPosition(
                                 Phaser.Math.Interpolation.Bezier([thisPos.x, tilePos.x], value),
-                                Phaser.Math.Interpolation.Bezier([thisPos.y, tilePos.y], value),
+                                Phaser.Math.Interpolation.Bezier([thisPos.y, tilePos.y], value)
                             )
-                        }
+                        },
                     })
                 }
-            }
+            },
         })
-
 
         // return []
     }

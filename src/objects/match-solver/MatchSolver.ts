@@ -1,5 +1,5 @@
-import CandyGrid from "../candy-grid/CandyGrid"
-import Tile from "../tile/Tile"
+import CandyGrid from '../candy-grid/CandyGrid'
+import Tile from '../tile/Tile'
 
 type Match = {
     target: Tile
@@ -12,17 +12,17 @@ function getNeighboursOf(tile: Tile, grid: CandyGrid) {
     const left = grid.getTileAt(tile.gridCoords.x, tile.gridCoords.y - 1)
     const right = grid.getTileAt(tile.gridCoords.x, tile.gridCoords.y + 1)
 
-    return [top, bottom, left, right].filter(tile => tile !== null) as Tile[]
+    return [top, bottom, left, right].filter((tile) => tile !== null) as Tile[]
 }
 
 function getTileInArray(x: number, y: number, array: Tile[]) {
-    return array.find(tile => tile.gridCoords.x === x && tile.gridCoords.y === y)
+    return array.find((tile) => tile.gridCoords.x === x && tile.gridCoords.y === y)
 }
 
 function findLongestHorizontal(at: Tile, array: Tile[]): Match {
     const match: Match = {
         target: at,
-        sources: [at]
+        sources: [at],
     }
 
     let left = getTileInArray(at.gridCoords.x, at.gridCoords.y - 1, array)
@@ -45,13 +45,13 @@ function findLongestHorizontal(at: Tile, array: Tile[]): Match {
 
 /**
  * Find horizontals matches where there are at least 3 in a row
- * @param array 
+ * @param array
  */
 function findHorizontalMatchIn(array: Tile[]): Match[] {
     const matches: Match[] = []
     const visited: Tile[] = []
 
-    array.forEach(tile => {
+    array.forEach((tile) => {
         if (visited.includes(tile)) {
             return
         }
@@ -71,7 +71,7 @@ function findHorizontalMatchIn(array: Tile[]): Match[] {
 function findLongestVertical(at: Tile, array: Tile[]): Match {
     const match: Match = {
         target: at,
-        sources: [at]
+        sources: [at],
     }
 
     let above = getTileInArray(at.gridCoords.x - 1, at.gridCoords.y, array)
@@ -96,7 +96,7 @@ function findVerticalMatchIn(array: Tile[]): Match[] {
     const matches: Match[] = []
     const visited: Tile[] = []
 
-    array.forEach(tile => {
+    array.forEach((tile) => {
         if (visited.includes(tile)) {
             return
         }
@@ -127,7 +127,7 @@ export default function findClearables(at: Tile, grid: CandyGrid) {
         visited.push(tile)
 
         const neighbours = getNeighboursOf(tile, grid)
-        const sameNeighbours = neighbours.filter(neighbour => {
+        const sameNeighbours = neighbours.filter((neighbour) => {
             if (!neighbour.isReady()) {
                 hasNotReadyTile = true
             }

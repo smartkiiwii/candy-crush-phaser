@@ -1,6 +1,6 @@
-import { AnimationStateConfig } from "@/classes/AnimationController";
-import Tile from "../../Tile";
-import TileState from "../TileState"
+import { AnimationStateConfig } from '@/classes/AnimationController'
+import Tile from '../../Tile'
+import TileState from '../TileState'
 
 export default class ClearState extends TileState {
     public clearTarget: Tile
@@ -8,10 +8,14 @@ export default class ClearState extends TileState {
     private completed: boolean
     public emitter: Phaser.GameObjects.Particles.ParticleEmitter | null
 
-    constructor(tile: Tile, emitter: Phaser.GameObjects.Particles.ParticleEmitter | null, config?: Omit<AnimationStateConfig, "name">) {
+    constructor(
+        tile: Tile,
+        emitter: Phaser.GameObjects.Particles.ParticleEmitter | null,
+        config?: Omit<AnimationStateConfig, 'name'>
+    ) {
         super(tile, {
             ...config,
-            name: "clear",
+            name: 'clear',
             exitCondition: () => {
                 return this.completed && (config?.exitCondition?.() ?? true)
             },
@@ -23,7 +27,7 @@ export default class ClearState extends TileState {
                 config?.onExit?.(state)
                 tile.setActive(false)
                 tile.tileEvents.emit('clear:stop')
-            }
+            },
         })
 
         this.clearTarget = tile
@@ -34,7 +38,7 @@ export default class ClearState extends TileState {
     enter(): void {
         super.enter()
         if (this.completed) {
-            throw new Error("ClearState: cannot enter completed state")
+            throw new Error('ClearState: cannot enter completed state')
         }
 
         const ogScale = this.tile.scale
@@ -68,7 +72,7 @@ export default class ClearState extends TileState {
                 // this.tile.setPosition(ogPosition.x, ogPosition.y)
 
                 this.completed = true
-            }
+            },
         })
     }
 

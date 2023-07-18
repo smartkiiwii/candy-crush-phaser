@@ -1,8 +1,8 @@
-import { AnimationStateConfig } from "@/classes/AnimationController"
-import Tile from "../../Tile"
-import TileState from "../TileState"
-import { GRID_CONFIG } from "@/constants/const"
-import SecondOrderDynamics from "@/classes/SecondOrderDynamics"
+import { AnimationStateConfig } from '@/classes/AnimationController'
+import Tile from '../../Tile'
+import TileState from '../TileState'
+import { GRID_CONFIG } from '@/constants/const'
+import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
 
 import Vector2 = Phaser.Math.Vector2
 
@@ -17,10 +17,10 @@ export default class FocusState extends TileState {
     private ogHeight: number
     private ogY: number
 
-    constructor(tile: Tile, config?: Omit<AnimationStateConfig, "name">) {
+    constructor(tile: Tile, config?: Omit<AnimationStateConfig, 'name'>) {
         super(tile, {
             ...config,
-            name: "focus",
+            name: 'focus',
             onEnter: (state) => {
                 tile.tileEvents.emit('focus:start')
                 config?.onEnter?.(state)
@@ -29,7 +29,7 @@ export default class FocusState extends TileState {
                 tile.tileEvents.emit('focus:stop')
                 config?.onExit?.(state)
             },
-            exitCondition: () => (config?.exitCondition?.() ?? true)
+            exitCondition: () => config?.exitCondition?.() ?? true,
         })
 
         this.targetPos = new Vector2(tile.x, tile.y)
@@ -55,7 +55,8 @@ export default class FocusState extends TileState {
 
                 const scaleChangeX = Phaser.Math.Easing.Linear(value) * this.ogScale * 0.2
                 const scaleChangeY = Phaser.Math.Easing.Linear(value) * this.ogScale * 0.15
-                const tileChangeY = Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * this.ogHeight * 0.3
+                const tileChangeY =
+                    Phaser.Math.Easing.Cubic.InOut((value + 2) % 2) * this.ogHeight * 0.3
 
                 this.tile.scaleX = this.ogScale - scaleChangeX
                 this.tile.scaleY = this.ogScale + scaleChangeY
@@ -65,7 +66,7 @@ export default class FocusState extends TileState {
             onPause: () => {
                 this.tile.scale = this.ogScale
                 this.tweenedYDistance = this.ogY
-            }
+            },
         })
     }
 
@@ -80,7 +81,7 @@ export default class FocusState extends TileState {
         this.ogScale = this.tile.scale
         this.ogHeight = GRID_CONFIG.tileHeight
         this.ogY = this.tile.y
-        
+
         this.tweener.restart()
     }
 
@@ -88,14 +89,20 @@ export default class FocusState extends TileState {
         super.update(time, delta)
 
         this.targetPos.set(
-            this.tile.gridCoords.y * GRID_CONFIG.tileWidth + GRID_CONFIG.padding + GRID_CONFIG.tileWidth / 2,
-            this.tile.gridCoords.x * GRID_CONFIG.tileHeight + GRID_CONFIG.padding + GRID_CONFIG.tileHeight / 2
+            this.tile.gridCoords.y * GRID_CONFIG.tileWidth +
+                GRID_CONFIG.padding +
+                GRID_CONFIG.tileWidth / 2,
+            this.tile.gridCoords.x * GRID_CONFIG.tileHeight +
+                GRID_CONFIG.padding +
+                GRID_CONFIG.tileHeight / 2
         )
 
         const newPos = this.secondOrderTweener.update(delta, this.targetPos)
         this.tile.setPosition(
             newPos.x,
-            newPos.y > this.targetPos.y ? this.targetPos.y - (newPos.y - this.targetPos.y) - this.tweenedYDistance : newPos.y - this.tweenedYDistance
+            newPos.y > this.targetPos.y
+                ? this.targetPos.y - (newPos.y - this.targetPos.y) - this.tweenedYDistance
+                : newPos.y - this.tweenedYDistance
         )
 
         // check if target reached

@@ -1,6 +1,6 @@
-import { GRID_CONFIG } from "@/constants/const"
-import Tile from "../tile/Tile"
-import DampenedParticleProcessor from "@/classes/DampenedParticle"
+import { GRID_CONFIG } from '@/constants/const'
+import Tile from '../tile/Tile'
+import DampenedParticleProcessor from '@/classes/DampenedParticle'
 
 type GridTile = Tile | null
 
@@ -17,7 +17,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
     private longIdleFX!: Phaser.FX.Shine
 
     /**
-     * 
+     *
      * @param scene The Scene to which this Game Object belongs. A Game Object can only belong to one Scene at a time.
      * @param x The horizontal position of this Game Object in the world. Default 0.
      * @param y The vertical position of this Game Object in the world. Default 0.
@@ -26,18 +26,18 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
     constructor(scene: Phaser.Scene, x?: number, y?: number) {
         const group = scene.add.group([], {
             classType: Tile,
-            key: "tile",
+            key: 'tile',
             maxSize: GRID_CONFIG.gridHeight * GRID_CONFIG.gridWidth * 2,
             createCallback: (obj: Phaser.GameObjects.GameObject) => {
                 const tile = obj as Tile
                 tile.setActive(false)
                 tile.setVisible(false)
             },
-            runChildUpdate: true
+            runChildUpdate: true,
         })
 
         group.createMultiple({
-            key: "tile",
+            key: 'tile',
             repeat: GRID_CONFIG.gridHeight * GRID_CONFIG.gridWidth,
         })
 
@@ -45,7 +45,6 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         this.tilePool = group
         this.tileLayer = scene.add.layer(group.getChildren())
-        this.tiles = []
         this.config = GRID_CONFIG
         this.clearParticles = scene.add
             .particles(0, 0, 'star', {
@@ -127,17 +126,25 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                 const tile = this.createTile()
                 const frameName = this.getRandomTileFrame()
 
-                tile.reset({
-                    id: frameName,
-                    x: y * tileWidth + padding + tileWidth / 2,
-                    y: x * tileHeight + padding + tileHeight / 2 - emptyTileCount * GRID_CONFIG.tileHeight,
-                    grid: this,
-                    clearParticles: this.clearParticles,
-                    texture: 'candies',
-                    frame: frameName,
-                    gridX: x,
-                    gridY: y,
-                }, true, true)
+                tile.reset(
+                    {
+                        id: frameName,
+                        x: y * tileWidth + padding + tileWidth / 2,
+                        y:
+                            x * tileHeight +
+                            padding +
+                            tileHeight / 2 -
+                            emptyTileCount * GRID_CONFIG.tileHeight,
+                        grid: this,
+                        clearParticles: this.clearParticles,
+                        texture: 'candies',
+                        frame: frameName,
+                        gridX: x,
+                        gridY: y,
+                    },
+                    true,
+                    true
+                )
 
                 this.tiles[x][y] = tile
             }
@@ -223,7 +230,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         if (tile === this.tileDown) {
             this.tileDown = null
         }
-        
+
         tile.disableInteractive()
         this.tiles[x][y] = null
 
@@ -265,7 +272,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // two downs are adjacent
         if (difference.x + difference.y === 1) {
             const tileDown = this.tileDown
-            
+
             this.tileDown.setFocused(false)
 
             // TODO: change if want to implement swap animation
@@ -301,8 +308,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         const bottom = this.getTileAt(tile.gridCoords.x + 1, tile.gridCoords.y)
         const left = this.getTileAt(tile.gridCoords.x, tile.gridCoords.y - 1)
         const right = this.getTileAt(tile.gridCoords.x, tile.gridCoords.y + 1)
-    
-        return [top, bottom, left, right].filter(tile => tile !== null) as Tile[]
+
+        return [top, bottom, left, right].filter((tile) => tile !== null) as Tile[]
     }
 
     public swapTilesInternal(tile1: Tile, tile2: Tile) {
