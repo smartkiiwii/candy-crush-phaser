@@ -92,6 +92,8 @@ export default class AnimationController extends StateMachine<AnimationState> {
 
     public reset() {
         this.resetState()
+
+        this.getState().enter()
     }
 
     private static validateDirectedGraph(initialState: AnimationState, directedGraph: Map<AnimationState, AnimationState[]>) {
