@@ -1,5 +1,5 @@
 declare namespace Phaser.GameObjects {
     interface GameObjectFactory {
-        candyGrid(gridConfig: GridConfig): ICandyGrid
+        candyGrid(x?: number, y?: number): ICandyGrid
     }
 }

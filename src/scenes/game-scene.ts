@@ -1,5 +1,3 @@
-import { GRID_CONFIG } from '../constants/const'
-
 export class GameScene extends Phaser.Scene {
     constructor() {
         super({
@@ -9,7 +7,7 @@ export class GameScene extends Phaser.Scene {
 
     create(): void {
         this.add
-            .candyGrid(GRID_CONFIG)
-            .setPosition(this.cameras.main.centerX, this.cameras.main.centerY)
+            .candyGrid(0, 0)
+            // .setPosition(this.cameras.main.centerX, this.cameras.main.centerY)
     }
 }

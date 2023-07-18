@@ -1,4 +1,4 @@
-interface ICandyGrid extends Phaser.GameObjects.NineSlice {
+interface ICandyGrid extends Phaser.GameObjects.Container {
     update(time: number, delta: number): void
 }
 

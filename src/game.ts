@@ -1,6 +1,6 @@
 import 'phaser'
 import { GameConfig } from './config'
-import CandyGrid from './objects/CandyGrid'
+import CandyGrid from './objects/candy-grid/CandyGrid'
 
 export class Game extends Phaser.Game {
     constructor(config: Phaser.Types.Core.GameConfig) {
@@ -10,8 +10,8 @@ export class Game extends Phaser.Game {
 
 Phaser.GameObjects.GameObjectFactory.register(
     'candyGrid',
-    function (this: Phaser.GameObjects.GameObjectFactory, gridConfig: GridConfig) {
-        const candyGrid = new CandyGrid(this.scene, gridConfig)
+    function (this: Phaser.GameObjects.GameObjectFactory, x?: number, y?: number) {
+        const candyGrid = new CandyGrid(this.scene, x, y)
 
         this.displayList.add(candyGrid)
         // this.updateList.add(candyGrid)
