@@ -154,8 +154,8 @@ export default class Tile extends Phaser.GameObjects.Image {
             .image(0, 0, 'shine')
             .setScale(1.3)
             .setTint(0xffff00)
-            .setBlendMode(Phaser.BlendModes.ADD)
             .setVisible(false)
+
         scene.add.tween({
             targets: this.specialTileFX,
             duration: 20000,
@@ -197,6 +197,12 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.grid = grid
         this.gridCoords.set(gridX, gridY)
 
+        if (this.specialTileFX.parentContainer) {
+            this.specialTileFX.parentContainer.remove(this.specialTileFX)
+        }
+
+        this.grid.add(this.specialTileFX).moveBelow(this.specialTileFX, this)
+
         this.clearParticles = clearParticles
         this.specialParticles = specialParticles
         this.explosionParticles = explosionParticles
@@ -237,7 +243,10 @@ export default class Tile extends Phaser.GameObjects.Image {
         }
 
         // move special tile fx to the center of the tile
-        this.specialTileFX.setPosition(this.getCenter().x, this.getCenter().y)
+        this.specialTileFX.setPosition(
+            this.getCenter(undefined, true).x,
+            this.getCenter(undefined, true).y
+        )
     }
 
     setFocused(focused = true) {

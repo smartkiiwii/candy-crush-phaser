@@ -48,6 +48,24 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         super(scene, x, y, [])
 
+        // add nine slice bg
+        const bg = this.scene.add
+            .nineslice(
+                0,
+                0,
+                'ui',
+                'candy-grid',
+                GRID_CONFIG.gridWidth * GRID_CONFIG.tileWidth + GRID_CONFIG.padding * 2,
+                GRID_CONFIG.gridHeight * GRID_CONFIG.tileHeight + GRID_CONFIG.padding * 2,
+                GRID_CONFIG.leftWidth,
+                GRID_CONFIG.rightWidth,
+                GRID_CONFIG.topHeight,
+                GRID_CONFIG.bottomHeight
+            )
+            .setOrigin(0)
+
+        this.add(bg)
+
         this.lastInteraction = 0
         this.tilePool = group
         this.tileLayer = scene.add.layer(group.getChildren())
@@ -115,11 +133,11 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // subscribe to tile events
         scene.input.on('gameobjectdown', this.onTileDown, this)
 
-        // create grid
-        this.tiles = this.genGrid()
-
         // create background grid
         this.bgTiles = this.genBgGrid()
+
+        // create grid
+        this.tiles = this.genGrid()
 
         // try clear on all tiles
         this.tiles.forEach((row) => {
@@ -284,6 +302,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                     )
                     .setAlpha(0)
 
+                this.add(rect)
                 grid[x].push(rect)
             }
         }
@@ -473,8 +492,6 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         const [tile1, tile2] = solve
 
-        const horizontal = tile1.gridCoords.x === tile2.gridCoords.x
-
         // tween alpha of bg tiles at same position
         this.scene.tweens.add({
             targets: [
@@ -482,8 +499,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                 this.bgTiles[tile2.gridCoords.x][tile2.gridCoords.y],
             ],
             alpha: 0.5,
-            scaleX: horizontal ? 2 : 1,
-            scaleY: horizontal ? 1 : 2,
+            scale: 0.9,
             ease: 'Sine.easeInOut',
             duration: 500,
             yoyo: true,

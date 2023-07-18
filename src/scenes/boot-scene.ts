@@ -50,7 +50,7 @@ export class BootScene extends Phaser.Scene {
         )
     }
 
-    update(): void {
+    create(): void {
         this.scene.start('GameScene')
     }
 
