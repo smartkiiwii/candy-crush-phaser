@@ -1,4 +1,5 @@
-import CandyGrid from '../candy-grid/CandyGrid'
+import { GRID_CONFIG } from '@/constants/const'
+import { GridTile } from '../candy-grid/CandyGrid'
 import Tile from '../tile/Tile'
 
 type Match = {
@@ -6,11 +7,19 @@ type Match = {
     sources: Tile[]
 }
 
-function getNeighboursOf(tile: Tile, grid: CandyGrid) {
-    const top = grid.getTileAt(tile.gridCoords.x - 1, tile.gridCoords.y)
-    const bottom = grid.getTileAt(tile.gridCoords.x + 1, tile.gridCoords.y)
-    const left = grid.getTileAt(tile.gridCoords.x, tile.gridCoords.y - 1)
-    const right = grid.getTileAt(tile.gridCoords.x, tile.gridCoords.y + 1)
+function getTileAt(x: number, y: number, grid: GridTile[][]) {
+    if (x < 0 || x >= GRID_CONFIG.gridHeight || y < 0 || y >= GRID_CONFIG.gridWidth) {
+        return null
+    }
+
+    return grid[x][y]
+}
+
+function getNeighboursOf(tile: Tile, grid: GridTile[][]) {
+    const top = getTileAt(tile.gridCoords.x - 1, tile.gridCoords.y, grid)
+    const bottom = getTileAt(tile.gridCoords.x + 1, tile.gridCoords.y, grid)
+    const left = getTileAt(tile.gridCoords.x, tile.gridCoords.y - 1, grid)
+    const right = getTileAt(tile.gridCoords.x, tile.gridCoords.y + 1, grid)
 
     return [top, bottom, left, right].filter((tile) => tile !== null) as Tile[]
 }
@@ -113,7 +122,7 @@ function findVerticalMatchIn(array: Tile[]): Match[] {
     return matches
 }
 
-export default function findClearables(at: Tile, grid: CandyGrid) {
+export default function findClearables(at: Tile, grid: GridTile[][]) {
     // breadth first search to find all tiles where .isSameAs() is true
     const queue: Tile[] = [at]
     const visited: Tile[] = []

@@ -1,20 +1,25 @@
 import { GRID_CONFIG } from '@/constants/const'
 import Tile from '../tile/Tile'
 import DampenedParticleProcessor from '@/classes/DampenedParticle'
+import findClearables from '../match-solver/MatchSolver'
 
-type GridTile = Tile | null
+export type GridTile = Tile | null
 
 export default class CandyGrid extends Phaser.GameObjects.Container {
+    private bgTiles: Phaser.GameObjects.Rectangle[][]
     private tiles: GridTile[][]
     private tilePool: Phaser.GameObjects.Group
     private tileLayer: Phaser.GameObjects.Layer
     private config: GridConfig
+
     private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter
+    private specialParticles: Phaser.GameObjects.Particles.ParticleEmitter
+    private explosionParticles: Phaser.GameObjects.Particles.ParticleEmitter
+
+    private lastInteraction: number
 
     private tileDown: Tile | null
     private tileSwap: Tile | null
-
-    private longIdleFX!: Phaser.FX.Shine
 
     /**
      *
@@ -43,17 +48,18 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         super(scene, x, y, [])
 
+        this.lastInteraction = 0
         this.tilePool = group
         this.tileLayer = scene.add.layer(group.getChildren())
         this.config = GRID_CONFIG
         this.clearParticles = scene.add
-            .particles(0, 0, 'star', {
+            .particles(0, 0, 'circle', {
                 emitting: false,
                 speed: 500,
-                scale: { start: 0.8, end: 0 },
+                scale: { start: 1.5, end: 0, random: true },
                 blendMode: Phaser.BlendModes.NORMAL,
                 lifespan: 500,
-                quantity: [1, 2],
+                quantity: [3, 4],
             })
             .setDepth(10)
 
@@ -63,7 +69,45 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             })
         )
 
+        this.specialParticles = scene.add
+            .particles(0, 0, 'star', {
+                emitting: false,
+                speed: 500,
+                scale: { start: 0.8, end: 0 },
+                lifespan: 500,
+                quantity: [1, 2],
+            })
+            .setDepth(10)
+
+        this.specialParticles.addParticleProcessor(
+            new DampenedParticleProcessor({
+                strength: 0.8,
+            })
+        )
+
+        this.explosionParticles = scene.add.particles(0, 0, 'candies', {
+            frame: GRID_CONFIG.candies,
+            lifespan: 1000,
+            speed: 1000,
+            maxVelocityX: 700,
+            maxVelocityY: 700,
+            scale: { start: 2, end: 0, random: true },
+            rotate: { start: 0, end: 360, random: true },
+            accelerationY: 1000,
+            blendMode: Phaser.BlendModes.SCREEN,
+            particleBringToTop: false,
+            emitting: false,
+        })
+
+        this.explosionParticles.addParticleProcessor(
+            new DampenedParticleProcessor({
+                strength: 0.9,
+            })
+        )
+
         this.add(this.clearParticles)
+        this.add(this.specialParticles)
+        this.add(this.explosionParticles)
 
         this.tileDown = null
         this.tileSwap = null
@@ -74,14 +118,15 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // create grid
         this.tiles = this.genGrid()
 
+        // create background grid
+        this.bgTiles = this.genBgGrid()
+
         // try clear on all tiles
         this.tiles.forEach((row) => {
             row.forEach((tile) => {
                 tile?.tryClear()
             })
         })
-
-        // this.postFX.addColorMatrix().brightness(2)
 
         scene.events.on('update', this.onUpdate, this)
     }
@@ -90,6 +135,13 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // TODO: implement this inside the tiles themselves
         this.bubbleUp()
         this.fillCleared()
+
+        if (this.scene.time.now - this.lastInteraction > 8000) {
+            this.playLongIdle()
+            this.playHint()
+            this.lastInteraction = this.scene.time.now
+        }
+
     }
 
     private bubbleUp() {
@@ -137,6 +189,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                             emptyTileCount * GRID_CONFIG.tileHeight,
                         grid: this,
                         clearParticles: this.clearParticles,
+                        specialParticles: this.specialParticles,
+                        explosionParticles: this.explosionParticles,
                         texture: 'candies',
                         frame: frameName,
                         gridX: x,
@@ -147,6 +201,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                 )
 
                 this.tiles[x][y] = tile
+                this.lastInteraction = this.scene.time.now
             }
         }
     }
@@ -167,6 +222,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             this.tileLayer.add(tile)
             this.add(tile)
             this.bringToTop(this.clearParticles)
+            this.bringToTop(this.specialParticles)
+            this.bringToTop(this.explosionParticles)
         }
 
         return tile
@@ -192,6 +249,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                     y: x * tileHeight + padding + tileHeight / 2,
                     grid: this,
                     clearParticles: this.clearParticles,
+                    specialParticles: this.specialParticles,
+                    explosionParticles: this.explosionParticles,
                     texture: 'candies',
                     frame: frameName,
                     gridX: x,
@@ -199,6 +258,32 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                 })
 
                 grid[x].push(tile)
+            }
+        }
+
+        return grid
+    }
+
+    /**
+     * Generate the background grid of rectangular tiles with alpha = 0
+     */
+    private genBgGrid(): Phaser.GameObjects.Rectangle[][] {
+        const grid: Phaser.GameObjects.Rectangle[][] = []
+        const { tileWidth, tileHeight, padding } = this.config
+
+        for (let x = 0; x < this.config.gridHeight; x++) {
+            grid.push([])
+            for (let y = 0; y < this.config.gridWidth; y++) {
+                const rect = this.scene.add.rectangle(
+                    y * tileWidth + padding + tileWidth / 2,
+                    x * tileHeight + padding + tileHeight / 2,
+                    tileWidth,
+                    tileHeight,
+                    0xffffff,
+                    1
+                ).setAlpha(0)
+
+                grid[x].push(rect)
             }
         }
 
@@ -241,9 +326,21 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
     }
 
     /**
+     * Get the grid
+     * @returns The grid
+     */
+    public getTiles(): GridTile[][] {
+        return this.tiles
+    }
+
+    /**
      * React to tile down event
      */
     private onTileDown(pointer: Phaser.Input.Pointer, tile: Tile): void {
+        if (!tile.isReady()) {
+            return
+        }
+
         // is already swapping
         if (this.tileSwap !== null) {
             return
@@ -312,6 +409,22 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         return [top, bottom, left, right].filter((tile) => tile !== null) as Tile[]
     }
 
+    public getSurroundingTilesOf(tile: Tile, distance: number) {
+        const tiles: Tile[] = []
+
+        for (let x = tile.gridCoords.x - distance; x <= tile.gridCoords.x + distance; x++) {
+            for (let y = tile.gridCoords.y - distance; y <= tile.gridCoords.y + distance; y++) {
+                const t = this.getTileAt(x, y)
+
+                if (t) {
+                    tiles.push(t)
+                }
+            }
+        }
+
+        return tiles
+    }
+
     public swapTilesInternal(tile1: Tile, tile2: Tile) {
         const { gridCoords: coords1 } = tile1
         const { gridCoords: coords2 } = tile2
@@ -320,7 +433,94 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         this.tiles[coords2.x][coords2.y] = tile1
     }
 
-    private setLongIdle(isLongIdle: boolean) {
-        this.longIdleFX.setActive(isLongIdle)
+    /**
+     * Tween stagger alpha of bg tiles
+     */
+    private playLongIdle() {
+        console.log('play long idle')
+        this.bgTiles.forEach((row, x) => {
+            row.forEach((tile, y) => {
+                this.scene.tweens.add({
+                    targets: tile,
+                    alpha: 1,
+                    scale: 0.5,
+                    duration: 500,
+                    ease: 'Sine.easeInOut',
+                    delay: x * 100 + y * 100,
+                    yoyo: true,
+                })
+            })
+        })
+    }
+
+    private playHint() {
+        // first pass: start finding solve at random pos
+        const startX = Phaser.Math.Between(0, this.config.gridHeight - 1)
+        const startY = Phaser.Math.Between(0, this.config.gridWidth - 1)
+
+        let solve = this.findSolve(startX, startY)
+        
+        if (!solve) {
+            // second pass: start finding solve at 0
+            solve = this.findSolve(0, 0)
+        }
+
+        if (!solve) {
+            console.warn('no solve found')
+            return
+        }
+
+        const [tile1, tile2] = solve
+
+        const horizontal = tile1.gridCoords.x === tile2.gridCoords.x
+
+        // tween alpha of bg tiles at same position
+        this.scene.tweens.add({
+            targets: [this.bgTiles[tile1.gridCoords.x][tile1.gridCoords.y], this.bgTiles[tile2.gridCoords.x][tile2.gridCoords.y]],
+            alpha: 0.5,
+            scaleX: horizontal ? 2 : 1,
+            scaleY: horizontal ? 1 : 2,
+            ease: 'Sine.easeInOut',
+            duration: 500,
+            yoyo: true,
+            repeat: 2,
+            loop: 1,
+            loopDelay: 300,
+        })
+    }
+
+    private findSolve(startX: number, startY: number): [Tile, Tile] | null {
+        // clone the grid
+        const grid = this.tiles.map((row) => row.map((tile) => tile))
+
+        // swap 2 tiles and check if there is a match
+        for (let x = startX; x < this.config.gridHeight; x++) {
+            for (let y = startY; y < this.config.gridWidth; y++) {
+                const tile1 = grid[x][y]
+                const tile2 = grid[x][y + 1]
+
+                if (tile1 && tile2) {
+                    this.swapTilesInternal(tile1, tile2)
+                    
+                    const temp = tile1.gridCoords.clone()
+                    tile1.gridCoords.copy(tile2.gridCoords)
+                    tile2.gridCoords.copy(temp)
+
+                    const matches = [...findClearables(tile1, grid), ...findClearables(tile2, grid)]
+
+                    this.swapTilesInternal(tile1, tile2)
+
+                    temp.copy(tile1.gridCoords)
+                    tile1.gridCoords.copy(tile2.gridCoords)
+                    tile2.gridCoords.copy(temp)
+
+                    if (matches.length > 0) {
+                        return [tile1, tile2]
+                    }
+                }
+            }
+        }
+
+        return null
     }
 }

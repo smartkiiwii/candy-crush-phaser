@@ -10,10 +10,20 @@ import ClearState from './animator/state/ClearState'
 import findClearables from '../match-solver/MatchSolver'
 import DeadState from './animator/state/DeadState'
 
+export const SpecialType = {
+    NONE: 'NONE',
+    SMALL_EXPLOSION: 'SMALL_EXPLOSION',
+    BIG_EXPLOSION: 'BIG_EXPLOSION',
+} as const
+
+export type SpecialType = typeof SpecialType[keyof typeof SpecialType]
+
 export interface TileConfig {
     id: string
     grid: CandyGrid
     clearParticles: Phaser.GameObjects.Particles.ParticleEmitter
+    specialParticles: Phaser.GameObjects.Particles.ParticleEmitter
+    explosionParticles: Phaser.GameObjects.Particles.ParticleEmitter
     x: number
     y: number
     gridX: number
@@ -40,6 +50,11 @@ export default class Tile extends Phaser.GameObjects.Image {
     private idleState: IdleState
     private clearState: ClearState
     private clearParticles: Phaser.GameObjects.Particles.ParticleEmitter | null
+    private specialParticles: Phaser.GameObjects.Particles.ParticleEmitter | null
+    private explosionParticles: Phaser.GameObjects.Particles.ParticleEmitter | null
+
+    private specialType: SpecialType
+    private specialTileFX: Phaser.GameObjects.Image
 
     /**
      *
@@ -59,6 +74,8 @@ export default class Tile extends Phaser.GameObjects.Image {
         super(scene, x, y, texture, frame)
 
         this.clearParticles = null
+        this.specialParticles = null
+        this.explosionParticles = null
         this.gridCoords = new Vector2()
         this.tileEvents = new Phaser.Events.EventEmitter()
         this.grid = null
@@ -107,7 +124,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
         const deadState = new DeadState(this)
 
-        this.clearState = new ClearState(this, this.clearParticles, {
+        this.clearState = new ClearState(this, {
             enterCondition: () => this.isClearing,
             onExit: () => {
                 this.grid?.clearTileAt(this.gridCoords.x, this.gridCoords.y)
@@ -131,18 +148,41 @@ export default class Tile extends Phaser.GameObjects.Image {
         animMap.set(deadState, [])
 
         this.animator = new AnimationController(this.idleState, animMap)
+
+        this.specialType = SpecialType.NONE
+        this.specialTileFX = scene.add.image(0, 0, 'shine').setScale(1.3).setTint(0xffff00).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+        scene.add.tween({
+            targets: this.specialTileFX,
+            duration: 20000,
+            repeat: -1,
+            angle: 360,
+        })
+
+        scene.add.tween({
+            targets: this.specialTileFX,
+            duration: 2000,
+            repeat: -1,
+            yoyo: true,
+            alpha: 0.9,
+            scale: 1.1
+        })
     }
 
     reset(config: TileConfig, resetAnimator = false, attemptClear = false) {
-        const { id, grid, clearParticles, x, y, gridX, gridY, texture, frame } = config
+        const { id, grid, clearParticles, specialParticles, explosionParticles, x, y, gridX, gridY, texture, frame } = config
 
         this.setVisible(true)
+
+        this.specialType = SpecialType.NONE
+        this.specialTileFX.setVisible(false)
 
         this.id = id
         this.grid = grid
         this.gridCoords.set(gridX, gridY)
 
         this.clearParticles = clearParticles
+        this.specialParticles = specialParticles
+        this.explosionParticles = explosionParticles
 
         this.setPosition(x, y)
 
@@ -178,6 +218,9 @@ export default class Tile extends Phaser.GameObjects.Image {
         if (this.active) {
             this.animator.update(time, delta)
         }
+
+        // move special tile fx to the center of the tile
+        this.specialTileFX.setPosition(this.getCenter().x, this.getCenter().y)
     }
 
     setFocused(focused = true) {
@@ -213,15 +256,41 @@ export default class Tile extends Phaser.GameObjects.Image {
             throw new Error('Tile: cannot clear tile without grid')
         }
 
-        this.clearState.emitter = this.clearParticles
+        if (this.isClearing) {
+            return
+        }
+
+        this.clearState.clearEmitter = this.clearParticles
+        this.clearState.specialClearEmitter = this.specialParticles
+        this.clearState.explosionEmitter = this.explosionParticles
         this.isClearing = clearing
 
         // TODO: add logic to handle special clears, now only clear itself
+        switch (this.specialType) {
+            case SpecialType.SMALL_EXPLOSION:
+                // erase all tiles in a 3x3 grid
+                this.grid.getSurroundingTilesOf(this, 1).forEach((neighbour) => {
+                    neighbour.setClearing()
+                })
+
+                break
+
+            case SpecialType.BIG_EXPLOSION:
+                // erase all tiles in a 5x5 grid
+                this.grid.getSurroundingTilesOf(this, 3).forEach((neighbour) => {
+                    neighbour.setClearing()
+                })
+
+                break
+
+            default:
+                break
+        }
     }
 
     tryClear(): Tile[] {
         if (!this.active) {
-            throw new Error('Tile: cannot clear inactive tile')
+            return []
         }
 
         if (!this.grid) {
@@ -232,23 +301,31 @@ export default class Tile extends Phaser.GameObjects.Image {
             return []
         }
 
-        const matches = findClearables(this, this.grid)
+        const matches = findClearables(this, this.grid.getTiles())
 
-        if (matches.length > 0) {
-            // this.setClearing()
+        matches.forEach((match) => {
+            const size = match.sources.length
+            match.sources.forEach((source) => {
+                if (source === match.target && size > 4) {
+                    source.specialType = SpecialType.BIG_EXPLOSION
+                    source.specialTileFX.setVisible(true)
+                    source.setFrame('box')
+                    return
+                }
 
-            matches.forEach((match) => {
-                const size = match.sources.length
-                match.sources.forEach((source) => {
-                    source.clearState.clearTarget = size > 3 ? match.target : source
-                    source.setClearing()
-                })
+                if (source === match.target && size > 3) {
+                    source.specialType = SpecialType.SMALL_EXPLOSION
+                    source.specialTileFX.setVisible(true)
+                    return
+                }
+
+                source.clearState.clearTarget = size > 3 ? match.target : source
+                source.setClearing()
+                
             })
+        })
 
-            return matches.flatMap((match) => match.sources)
-        }
-
-        return []
+        return matches.flatMap((match) => match.sources)
     }
 
     tryPlayLongIdle(delay: number) {
@@ -319,6 +396,15 @@ export default class Tile extends Phaser.GameObjects.Image {
                 const temp = this.gridCoords.clone()
                 this.gridCoords.copy(tile.gridCoords)
                 tile.gridCoords.copy(temp)
+                
+                // if either is a special type of big explosion, clear it without having to check for clearables
+                if (this.specialType === SpecialType.BIG_EXPLOSION) {
+                    this.setClearing()
+                }
+
+                if (tile.specialType === SpecialType.BIG_EXPLOSION) {
+                    tile.setClearing()
+                }
 
                 const clears = [...this.tryClear(), ...tile.tryClear()]
 
@@ -361,5 +447,9 @@ export default class Tile extends Phaser.GameObjects.Image {
 
     isReady() {
         return !this.isClearing && !this.isFalling
+    }
+
+    getSpecialType() {
+        return this.specialType
     }
 }

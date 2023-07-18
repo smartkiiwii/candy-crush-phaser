@@ -78,6 +78,16 @@
       },
       {
         "type": "image",
+        "key": "circle",
+        "url": "./assets/shapes/circle.svg"
+      },
+      {
+        "type" :"image",
+        "key": "shine",
+        "url": "./assets/images/shine.png"
+      },
+      {
+        "type": "image",
         "key": "hint-arrow",
         "url": "./assets/shapes/arrow.svg"
       },
