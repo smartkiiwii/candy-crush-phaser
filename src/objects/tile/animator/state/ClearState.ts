@@ -23,7 +23,6 @@ export default class ClearState extends TileState {
             },
             onExit: (state) => {
                 config?.onExit?.(state)
-                tile.setActive(false)
                 tile.tileEvents.emit('clear:stop')
             },
         })
@@ -57,7 +56,7 @@ export default class ClearState extends TileState {
                 }
 
                 if (this.tile.getSpecialType() === SpecialType.SMALL_EXPLOSION) {
-                    this.tile.scene.cameras.main.shake(100, 0.01)
+                    this.tile.scene.cameras.main.shake(100, 0.02)
                     this.explosionEmitter?.emitParticleAt(
                         this.tile.getCenter().x,
                         this.tile.getCenter().y,
@@ -66,7 +65,7 @@ export default class ClearState extends TileState {
                 }
 
                 if (this.tile.getSpecialType() === SpecialType.BIG_EXPLOSION) {
-                    this.tile.scene.cameras.main.shake(500, 0.02)
+                    this.tile.scene.cameras.main.shake(300, 0.02)
                     this.explosionEmitter?.emitParticleAt(
                         this.tile.getCenter().x,
                         this.tile.getCenter().y,

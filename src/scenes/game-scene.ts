@@ -1,4 +1,4 @@
-import { GRID_CONFIG } from "@/constants/const"
+import { GRID_CONFIG } from '@/constants/const'
 
 export class GameScene extends Phaser.Scene {
     private curProgress: number
@@ -27,13 +27,15 @@ export class GameScene extends Phaser.Scene {
 
         // scale the grid to fit some percentage of the screen
         candyGrid.scale = Math.min(
-            this.cameras.main.width / gridWidth * 0.8,
-            this.cameras.main.height / gridHeight * 0.8,
+            (this.cameras.main.width / gridWidth) * 0.8,
+            (this.cameras.main.height / gridHeight) * 0.8
         )
 
         // center it
-        candyGrid.x = this.cameras.main.width / 2 - gridWidth * candyGrid.scale / 2 - GRID_CONFIG.padding
-        candyGrid.y = this.cameras.main.height / 2 - gridHeight * candyGrid.scale / 2 - GRID_CONFIG.padding
+        candyGrid.x =
+            this.cameras.main.width / 2 - (gridWidth * candyGrid.scale) / 2 - GRID_CONFIG.padding
+        candyGrid.y =
+            this.cameras.main.height / 2 - (gridHeight * candyGrid.scale) / 2 - GRID_CONFIG.padding
 
         // create a progress bar
         const progressBar = this.add.rectangle(
@@ -41,7 +43,7 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.height - 30,
             gridWidth,
             20,
-            0x000000,
+            0xff9580
         )
 
         this.progress = this.add.rectangle(
@@ -49,7 +51,7 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.height - 30,
             gridWidth,
             20,
-            0xeeee00,
+            0xeaff80
         )
 
         this.progress.width = 0

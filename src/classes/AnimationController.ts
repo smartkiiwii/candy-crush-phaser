@@ -93,6 +93,8 @@ export default class AnimationController extends StateMachine<AnimationState> {
     }
 
     public reset() {
+        this.getState().exit()
+
         this.resetState()
 
         this.getState().enter()

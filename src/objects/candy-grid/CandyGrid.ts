@@ -4,12 +4,15 @@ import DampenedParticleProcessor from '@/classes/DampenedParticle'
 import findClearables from '../match-solver/MatchSolver'
 import SecondOrderDynamics from '@/classes/SecondOrderDynamics'
 
-export type GridTile = Tile | null
+export type SpawnConfig = {
+    tile: Tile
+    emptyTileCount: number
+}
 
 export default class CandyGrid extends Phaser.GameObjects.Container {
     private bg: Phaser.GameObjects.NineSlice
     private bgTiles: Phaser.GameObjects.Rectangle[][]
-    private tiles: GridTile[][]
+    private tiles: Tile[][]
     private tilePool: Phaser.GameObjects.Group
     private config: GridConfig
 
@@ -24,6 +27,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
     private awaitingTransition: boolean
     private isTransitioning: boolean
+
+    private respawnQueue: SpawnConfig[]
 
     /**
      *
@@ -44,7 +49,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             },
             runChildUpdate: true,
         })
-        
+
         group.createMultiple({
             key: 'tile',
             repeat: GRID_CONFIG.gridHeight * GRID_CONFIG.gridWidth,
@@ -52,6 +57,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         super(scene, x, y, [])
 
+        this.respawnQueue = []
         this.awaitingTransition = false
         this.isTransitioning = false
 
@@ -70,6 +76,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                 GRID_CONFIG.bottomHeight
             )
             .setOrigin(0)
+            .setTintFill(0xff9580)
 
         this.add(this.bg)
 
@@ -145,10 +152,12 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // create grid
         this.tiles = this.genGrid()
 
-        // try clear on all tiles
-        this.tiles.forEach((row) => {
-            row.forEach((tile) => {
-                tile?.tryClear()
+        // try clear on all tiles after a bit of time had passed to settle the tiles
+        scene.time.delayedCall(500, () => {
+            this.tiles.forEach((row) => {
+                row.forEach((tile) => {
+                    tile?.tryClear()
+                })
             })
         })
 
@@ -158,9 +167,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
     onUpdate(): void {
         if (!this.isTransitioning) {
             // TODO: implement this inside the tiles themselves
-            this.bubbleUp()
+            // this.bubbleUp()
             this.fillCleared()
-    
+
             if (this.scene.time.now - this.lastInteraction > 8000) {
                 this.playLongIdle()
                 this.playHint()
@@ -182,38 +191,36 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         }
     }
 
-    private bubbleUp() {
-        const { gridWidth, gridHeight } = this.config
-
-        for (let y = 0; y < gridWidth; y++) {
-            let emptyTileCount = 0
-
-            for (let x = gridHeight - 1; x >= 0; x--) {
-                const tile = this.tiles[x][y]
-
-                if (!tile) {
-                    emptyTileCount++
-                } else if (emptyTileCount > 0) {
-                    tile.gridCoords.set(x + emptyTileCount, y)
-                    tile.setFalling()
-
-                    this.tiles[x + emptyTileCount][y] = tile
-                    this.tiles[x][y] = null
-                }
-            }
-        }
-    }
-
     private fillCleared() {
-        const { gridWidth, tileWidth, tileHeight, padding } = this.config
+        const { gridWidth, gridHeight, tileWidth, tileHeight, padding } = this.config
 
+        let emptyTileCount = 0
         for (let y = 0; y < gridWidth; y++) {
-            const emptyTileCount = this.tiles.reduce((acc, row) => {
-                return acc + (row[y] ? 0 : 1)
-            }, 0)
+            // only valid if the first tile is inactive
+            if (this.tiles[0][y]?.active) {
+                continue
+            }
+
+            emptyTileCount = 0
+            let foundActive = false
+            for (let x = 0; x < gridHeight; x++) {
+                if (this.tiles[x][y]?.active) {
+                    foundActive = true
+                    continue
+                }
+
+                // invalid if inactive tiles are seperated
+                if (foundActive) {
+                    emptyTileCount = 0
+                    break
+                }
+
+                emptyTileCount++
+            }
 
             for (let x = 0; x < emptyTileCount; x++) {
-                const tile = this.createTile()
+                const tile = this.tiles[x][y] as Tile
+
                 const frameName = this.getRandomTileFrame()
 
                 tile.reset(
@@ -238,6 +245,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                     true
                 )
 
+                tile.setActive(true)
+                tile.setInteractive()
+
                 this.tiles[x][y] = tile
                 this.lastInteraction = this.scene.time.now
             }
@@ -250,8 +260,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
      */
     private createTile(): Tile {
         const tile = this.tilePool.getFirstDead(true) as Tile
-        tile.setActive(true)
         tile.setVisible(true)
+        tile.setActive(true)
         tile.setInteractive()
 
         if (tile.parentContainer !== this) {
@@ -270,8 +280,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
      * Generate a new grid
      * @returns The grid
      */
-    private genGrid(): GridTile[][] {
-        const grid: GridTile[][] = []
+    private genGrid(): Tile[][] {
+        const grid: Tile[][] = []
         const { tileWidth, tileHeight, padding } = this.config
 
         for (let x = 0; x < this.config.gridHeight; x++) {
@@ -357,9 +367,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         }
 
         tile.disableInteractive()
-        this.tiles[x][y] = null
+        // this.tiles[x][y] = null
 
-        this.remove(tile)
+        // this.remove(tile)
 
         return true
     }
@@ -368,7 +378,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
      * Get the grid
      * @returns The grid
      */
-    public getTiles(): GridTile[][] {
+    public getTiles(): Tile[][] {
         return this.tiles
     }
 
@@ -427,7 +437,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
      * @param x the x coordinate of the tile
      * @param y the y coordinate of the tile
      */
-    public getTileAt(x: number, y: number): GridTile {
+    public getTileAt(x: number, y: number): Tile | null {
         if (x < 0 || x >= this.config.gridHeight || y < 0 || y >= this.config.gridWidth) {
             return null
         }
@@ -441,7 +451,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         const left = this.getTileAt(tile.gridCoords.x, tile.gridCoords.y - 1)
         const right = this.getTileAt(tile.gridCoords.x, tile.gridCoords.y + 1)
 
-        return [top, bottom, left, right].filter((tile) => tile !== null) as Tile[]
+        return [top, bottom, left, right].filter((tile) => tile !== null)
     }
 
     public getSurroundingTilesOf(tile: Tile, distance: number) {
@@ -564,7 +574,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         // shuffle tiles
         // Phaser.Utils.Array.Shuffle(shuffledTiles)
-        
+
         const tiles = shuffledTiles.map((tile, idx) => {
             if (!(tile instanceof Tile)) {
                 throw new Error('tile is not a Tile object')
@@ -582,38 +592,42 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                     dampening: 0.7,
                     eagerness: 2,
                 }),
-                tile
+                tile,
             }
         })
-        
+
         this.awaitingTransition = false
         this.isTransitioning = true
 
-        const radius = Math.min(this.bg.width, this.bg.height) / 2
+        const radius = Math.min(this.bg.width, this.bg.height) / 3
         const duration = 1000
 
-        const shape = new Phaser.Geom.Ellipse(this.bg.getCenter().x ?? 0, this.bg.getCenter().y ?? 0, radius, radius)
+        const shape = new Phaser.Curves.Ellipse(
+            this.bg.getCenter().x ?? 0,
+            this.bg.getCenter().y ?? 0,
+            radius,
+            radius
+        )
 
         this.scene.tweens.add({
             targets: shape,
-            width: 0,
+            xRadius: -radius,
             duration,
             ease: Phaser.Math.Easing.Linear,
-            repeat: 10,
+            repeat: 4,
             yoyo: true,
             onComplete: () => {
                 this.isTransitioning = false
-            }
+            },
         })
-        
-        // this.scene.tweens.add({
-        //     targets: shape,
-        //     angle: 360,
-        //     duration: duration,
-        //     ease: Phaser.Math.Easing.Linear,
-        //     repeat: 10,
-        //     yoyo: true,
-        // })
+
+        this.scene.tweens.add({
+            targets: shape,
+            angle: 360,
+            duration: duration,
+            ease: Phaser.Math.Easing.Linear,
+            repeat: 8,
+        })
 
         const fn = (time: number, delta: number) => {
             if (this.isTransitioning) {
@@ -622,9 +636,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
                     // offset from this container's center
                     tile.targetPosition.copy(point)
-    
+
                     const newPos = tile.tweener.update(delta, tile.targetPosition)
-    
+
                     tile.tile.x = newPos.x
                     tile.tile.y = newPos.y
 
@@ -633,16 +647,38 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             } else {
                 this.scene.events.off('update', fn)
 
-                tiles.forEach((tile) => {
+                tiles.forEach((tile, index) => {
                     // calculate shuffled coords based on order
-                    const x = Math.floor(tile.order / this.config.gridWidth)
-                    const y = tile.order % this.config.gridWidth
+                    // const x = Math.floor(index / this.config.gridWidth)
+                    // const y = index % this.config.gridWidth
+
+                    const { x, y } = tile.tile.gridCoords
 
                     tile.tile.gridCoords.set(x, y)
 
-                    tile.targetPosition.x = y * this.config.tileWidth + this.config.padding + this.config.tileWidth / 2
-                    tile.targetPosition.y = x * this.config.tileHeight + this.config.padding + this.config.tileHeight / 2
-                    
+                    tile.targetPosition.x =
+                        y * this.config.tileWidth + this.config.padding + this.config.tileWidth / 2
+                    tile.targetPosition.y =
+                        x * this.config.tileHeight +
+                        this.config.padding +
+                        this.config.tileHeight / 2
+
+                    const frame = this.getRandomTileFrame()
+
+                    tile.tile.reset({
+                        x: tile.tile.x,
+                        y: tile.tile.y,
+                        grid: this,
+                        clearParticles: this.clearParticles,
+                        specialParticles: this.specialParticles,
+                        explosionParticles: this.explosionParticles,
+                        texture: 'candies',
+                        frame,
+                        gridX: x,
+                        gridY: y,
+                        id: frame,
+                    })
+
                     // tween back to original position
                     this.scene.tweens.add({
                         targets: tile.tile,
@@ -654,17 +690,56 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                             tile.tile.setInteractive()
                             // tile.tile.setFalling()
                             tile.tile.tryClear()
-                        }
+                        },
                     })
                 })
             }
         }
 
-        
         this.scene.events.on('update', fn)
     }
 
     public awaitTransition(value: boolean) {
         this.awaitingTransition = value
+        // this.awaitingTransition = false
+    }
+
+    public spawnTileAt(gridX: number, gridY: number, emptyTileCount: number) {
+        const { tileWidth, tileHeight, padding } = this.config
+
+        const tile = this.createTile()
+        const frameName = this.getRandomTileFrame()
+
+        tile.reset(
+            {
+                id: frameName,
+                x: gridY * tileWidth + padding + tileWidth / 2,
+                y:
+                    gridX * tileHeight +
+                    padding +
+                    tileHeight / 2 -
+                    emptyTileCount * GRID_CONFIG.tileHeight,
+                grid: this,
+                clearParticles: this.clearParticles,
+                specialParticles: this.specialParticles,
+                explosionParticles: this.explosionParticles,
+                texture: 'candies',
+                frame: frameName,
+                gridX: gridX,
+                gridY: gridY,
+            },
+            true,
+            true
+        )
+
+        this.tiles[gridX][gridY] = tile
+        this.lastInteraction = this.scene.time.now
+    }
+
+    public queueRespawn(tile: Tile, emptyTileCount: number) {
+        this.respawnQueue.push({
+            tile,
+            emptyTileCount,
+        })
     }
 }

@@ -1,6 +1,6 @@
 export const GRID_CONFIG: GridConfig = {
-    gridWidth: 10,
-    gridHeight: 10,
+    gridWidth: 12,
+    gridHeight: 12,
     tileWidth: 64,
     tileHeight: 72,
     padding: 16,

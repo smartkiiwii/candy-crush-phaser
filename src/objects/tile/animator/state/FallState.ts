@@ -70,4 +70,8 @@ export default class FallState extends TileState {
             this.maxTargetReachedTime += delta
         }
     }
+
+    suspense(): void {
+        this.maxTargetReachedTime = 0
+    }
 }

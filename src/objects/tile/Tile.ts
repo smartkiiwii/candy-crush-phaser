@@ -87,26 +87,71 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.isClearing = false
 
         this.idleState = new IdleState(this, {})
+
+        let hasEmptyTileBelow = false
         const fallState = new FallState(this, {
             enterCondition: () => this.isFalling,
+            exitCondition: () => !hasEmptyTileBelow,
             onEnter: () => {
+                if (!this.grid) {
+                    throw new Error('Tile: cannot fall without grid')
+                }
+
+                hasEmptyTileBelow = true
+
                 // tell above to fall
-                const above = this.grid?.getTileAt(this.gridCoords.x, this.gridCoords.y - 1)
+                const above = getNearestAbove(
+                    this.grid.getTiles(),
+                    this.gridCoords.x,
+                    this.gridCoords.y
+                )
                 if (above) {
                     above.setFalling()
                 }
             },
-            onExit: () => {
-                this.isFalling = false
-                this.tryClear()
-
-                if (this.grid) {
-                    // try clear adjacent tiles
-                    const neighbours = this.grid.getNeighboursOf(this)
-                    neighbours.forEach((neighbour) => {
-                        neighbour.tryClear()
-                    })
+            onUpdate: () => {
+                if (!this.grid) {
+                    throw new Error('Tile: cannot fall without grid')
                 }
+
+                hasEmptyTileBelow = hasClearedBelow(
+                    this.grid.getTiles(),
+                    this.gridCoords.x,
+                    this.gridCoords.y
+                )
+
+                const immediateBelow = this.grid.getTileAt(this.gridCoords.x + 1, this.gridCoords.y)
+                if (hasEmptyTileBelow && immediateBelow && !immediateBelow.active) {
+                    // swap tiles
+                    this.grid.swapTilesInternal(this, immediateBelow)
+
+                    // swap coords with it
+                    const temp = this.gridCoords.clone()
+                    this.gridCoords.copy(immediateBelow.gridCoords)
+                    immediateBelow.gridCoords.copy(temp)
+                }
+
+                // if still have empty tile below, but can't be swapped yet, suspense
+                if (hasEmptyTileBelow && immediateBelow && immediateBelow.active) {
+                    fallState.suspense()
+                }
+            },
+            onExit: () => {
+                if (!this.grid) {
+                    throw new Error('Tile: cannot fall without grid')
+                }
+
+                this.isFalling = false
+
+                if (this.active) {
+                    this.tryClear()
+                }
+
+                // try clear adjacent tiles
+                const neighbours = this.grid.getNeighboursOf(this)
+                neighbours.forEach((neighbour) => {
+                    neighbour?.tryClear()
+                })
             },
         })
 
@@ -127,15 +172,34 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.clearState = new ClearState(this, {
             enterCondition: () => this.isClearing,
             onExit: () => {
-                this.grid?.clearTileAt(this.gridCoords.x, this.gridCoords.y)
-                this.setVisible(false)
                 this.isClearing = false
 
-                // set above tiles to fall
-                const above = this.grid?.getTileAt(this.gridCoords.x, this.gridCoords.y - 1)
+                if (!this.grid) {
+                    throw new Error('Tile: cannot clear tile without grid')
+                }
+
+                this.setActive(false)
+                this.setVisible(false)
+
+                this.grid.clearTileAt(this.gridCoords.x, this.gridCoords.y)
+
+                const above = getNearestAbove(
+                    this.grid.getTiles(),
+                    this.gridCoords.x,
+                    this.gridCoords.y
+                )
+
                 if (above) {
                     above.setFalling()
                 }
+
+                // queue respawn
+                // const hasEmptyTileBelow = hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
+
+                // if (!hasEmptyTileBelow) {
+                //     // must be at the bottom of the block of empty tiles,
+                //     this.grid.queueRespawn(this, this.gridCoords.x + 1)
+                // }
             },
         })
 
@@ -213,9 +277,7 @@ export default class Tile extends Phaser.GameObjects.Image {
             this.setTexture(texture)
         }
 
-        if (this.frame.name !== frame) {
-            this.setFrame(frame)
-        }
+        this.setCandyType(frame)
 
         this.isFalling = true
         this.isFocused = false
@@ -232,20 +294,28 @@ export default class Tile extends Phaser.GameObjects.Image {
             // try clear adjacent tiles
             const neighbours = this.grid.getNeighboursOf(this)
             neighbours.forEach((neighbour) => {
-                neighbour.tryClear()
+                neighbour?.tryClear()
             })
         }
     }
 
-    update(time: number, delta: number) {
-        if (this.active) {
-            this.animator.update(time, delta)
+    setId(id: string) {
+        this.id = id
+    }
+
+    setCandyType(frame: string | number) {
+        if (this.frame.name !== frame) {
+            this.setFrame(frame)
         }
+    }
+
+    update(time: number, delta: number) {
+        this.animator.update(time, delta)
 
         // move special tile fx to the center of the tile
         this.specialTileFX.setPosition(
             this.getCenter().x ?? 0 * (this.parentContainer?.scaleX ?? 1),
-            this.getCenter().y ?? 0 * (this.parentContainer?.scaleY ?? 1),
+            this.getCenter().y ?? 0 * (this.parentContainer?.scaleY ?? 1)
         )
     }
 
@@ -286,13 +356,7 @@ export default class Tile extends Phaser.GameObjects.Image {
             return
         }
 
-        if (this.specialType === SpecialType.BIG_EXPLOSION) {
-            this.grid?.emit('tile-clearing', 50)
-        } else if (this.specialType === SpecialType.SMALL_EXPLOSION) {
-            this.grid?.emit('tile-clearing', 30)
-        } else {
-            this.grid?.emit('tile-clearing', 10)
-        }
+        this.grid?.emit('tile-clearing', 10)
 
         this.clearState.clearEmitter = this.clearParticles
         this.clearState.specialClearEmitter = this.specialParticles
@@ -479,10 +543,77 @@ export default class Tile extends Phaser.GameObjects.Image {
     }
 
     isReady() {
-        return !this.isClearing && !this.isFalling
+        return !this.isClearing && !this.isFalling && this.active
     }
 
     getSpecialType() {
         return this.specialType
     }
+
+    canRespawn(): boolean {
+        if (!this.grid) {
+            throw new Error('Tile: cannot fall without grid')
+        }
+
+        return (
+            !getNearestAbove(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y) &&
+            !hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
+        )
+
+        // the following is deprecated
+        // const nearestAbove = getNearestAbove(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
+        // const hasEmptyTileBelow = hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
+
+        /**
+         * if there is no tile above and no empty tile below,
+         * must be at the bottom of the block of empty tiles,
+         * reset all tiles by calling spawnTileAt() on the grid
+         * the x coord of this is the amount of empty tiles above it
+         */
+        // the following is deprecated
+        // if (!nearestAbove && !hasEmptyTileBelow) {
+        //     const emptyTiles = this.gridCoords.x + 1
+        //     for (let i = 0; i <= this.gridCoords.x; i++) {
+        //         this.grid.spawnTileAt(i, this.gridCoords.y, emptyTiles)
+        //     }
+        // }
+    }
+}
+
+/**
+ * Get the nearest tile above the given tile
+ * @param grid The grid to check
+ * @param x Row index
+ * @param y Column index
+ * @returns The tile if found a tile above, null if has reached the top
+ */
+function getNearestAbove(grid: Tile[][], x: number, y: number) {
+    let above = x - 1
+
+    while (above >= 0 && !grid[above][y]?.active) {
+        above--
+    }
+
+    if (above >= 0) {
+        return grid[above][y]
+    } else {
+        return null
+    }
+}
+
+/**
+ * Check if there is a null tile below the given tile
+ * @param grid The grid to check
+ * @param x Row index
+ * @param y Column index
+ * @returns
+ */
+function hasClearedBelow(grid: Tile[][], x: number, y: number) {
+    let below = x + 1
+
+    while (below < grid.length && grid[below][y]?.active) {
+        below++
+    }
+
+    return below < grid.length
 }
