@@ -1,5 +1,6 @@
 interface ICandyGrid extends Phaser.GameObjects.Container {
     update(time: number, delta: number): void
+    awaitTransition(value: boolean): void
 }
 
 type GridConfig = {

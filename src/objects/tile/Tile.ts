@@ -286,6 +286,14 @@ export default class Tile extends Phaser.GameObjects.Image {
             return
         }
 
+        if (this.specialType === SpecialType.BIG_EXPLOSION) {
+            this.grid?.emit('tile-clearing', 50)
+        } else if (this.specialType === SpecialType.SMALL_EXPLOSION) {
+            this.grid?.emit('tile-clearing', 30)
+        } else {
+            this.grid?.emit('tile-clearing', 10)
+        }
+
         this.clearState.clearEmitter = this.clearParticles
         this.clearState.specialClearEmitter = this.specialParticles
         this.clearState.explosionEmitter = this.explosionParticles

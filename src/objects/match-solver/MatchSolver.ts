@@ -151,7 +151,7 @@ export default function findClearables(at: Tile, grid: GridTile[][]) {
     }
 
     if (hasNotReadyTile) {
-        // return []
+        return []
     }
 
     // find horizontal matches
