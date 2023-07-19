@@ -42,7 +42,7 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.centerX,
             this.cameras.main.height - 30,
             gridWidth,
-            20,
+            40,
             0xff9580
         )
 
@@ -50,16 +50,30 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.centerX,
             this.cameras.main.height - 30,
             gridWidth,
-            20,
+            40,
             0xeaff80
         )
 
         this.progress.width = 0
 
+        // progress text
+        const progressText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 30,
+            '0%',
+            {
+                fontFamily: 'Arial',
+                fontStyle: 'bold',
+                fontSize: 24,
+                color: '#3f270f',
+            }).setOrigin(0.5)
+
         // subscribe to the grid's events
         candyGrid.on('tile-clearing', (score: number) => {
             this.curProgress += score / this.difficulty
             const percent = this.curProgress / this.maxProgress
+
+            progressText.text = `${Math.floor(percent * 100)}%`
 
             this.add.tween({
                 targets: this.progress,
