@@ -389,7 +389,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             this.tileDown = null
             return
         }
-        
+
         if (this.isTransitioning) {
             this.tileDown?.setFocused(false)
             this.tileDown = null

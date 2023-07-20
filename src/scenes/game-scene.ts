@@ -23,9 +23,9 @@ export class GameScene extends Phaser.Scene {
     create(): void {
         const levelUpConfetti = this.add.particles(0, 0, 'square', {
             x: this.cameras.main.centerX,
-            y: this.cameras.main.height / 11 * 10,
-            scaleY: {start: -0.3, end: 0.3, random: true},
-            rotate: {start: 0, end: 180, random: true},
+            y: (this.cameras.main.height / 11) * 10,
+            scaleY: { start: -0.3, end: 0.3, random: true },
+            rotate: { start: 0, end: 180, random: true },
             speedX: { min: -8000, max: 8000 },
             speedY: { min: -8000, max: -4000 },
             alpha: { start: 1, end: 0 },
@@ -79,16 +79,19 @@ export class GameScene extends Phaser.Scene {
         this.progress.width = 0
 
         // progress text
-        const progressText = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.height - 30,
-            'Level: 1, Progress: 0%',
-            {
-                fontFamily: 'Arial',
-                fontStyle: 'bold',
-                fontSize: 24,
-                color: '#3f270f',
-            }).setOrigin(0.5)
+        const progressText = this.add
+            .text(
+                this.cameras.main.centerX,
+                this.cameras.main.height - 30,
+                'Level: 1, Progress: 0%',
+                {
+                    fontFamily: 'Arial',
+                    fontStyle: 'bold',
+                    fontSize: 24,
+                    color: '#3f270f',
+                }
+            )
+            .setOrigin(0.5)
 
         // subscribe to the grid's events
         candyGrid.on('tile-clearing', (score: number) => {
