@@ -166,8 +166,6 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
     onUpdate(): void {
         if (!this.isTransitioning) {
-            // TODO: implement this inside the tiles themselves
-            // this.bubbleUp()
             this.fillCleared()
 
             if (this.scene.time.now - this.lastInteraction > 8000) {
@@ -386,6 +384,18 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
      * React to tile down event
      */
     private onTileDown(pointer: Phaser.Input.Pointer, tile: Tile): void {
+        if (this.awaitingTransition) {
+            this.tileDown?.setFocused(false)
+            this.tileDown = null
+            return
+        }
+        
+        if (this.isTransitioning) {
+            this.tileDown?.setFocused(false)
+            this.tileDown = null
+            return
+        }
+
         // is already swapping
         if (this.tileSwap !== null) {
             return

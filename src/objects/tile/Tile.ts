@@ -356,7 +356,7 @@ export default class Tile extends Phaser.GameObjects.Image {
             return
         }
 
-        this.grid?.emit('tile-clearing', 10)
+        this.grid?.emit('tile-clearing', 1)
 
         this.clearState.clearEmitter = this.clearParticles
         this.clearState.specialClearEmitter = this.specialParticles

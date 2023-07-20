@@ -1,3 +1,4 @@
+import ConfettiProcessor from '@/classes/ConfettiParticle'
 import { GRID_CONFIG } from '@/constants/const'
 
 export class GameScene extends Phaser.Scene {
@@ -20,6 +21,27 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
+        const levelUpConfetti = this.add.particles(0, 0, 'square', {
+            x: this.cameras.main.centerX,
+            y: this.cameras.main.height / 11 * 10,
+            scaleY: {start: -0.3, end: 0.3, random: true},
+            rotate: {start: 0, end: 180, random: true},
+            speedX: { min: -8000, max: 8000 },
+            speedY: { min: -8000, max: -4000 },
+            alpha: { start: 1, end: 0 },
+            gravityY: 3000,
+            lifespan: 1500,
+            quantity: 100,
+            emitting: false,
+            emitCallback: (particle: Phaser.GameObjects.Particles.Particle) => {
+                // give random colors
+                particle.tint = Phaser.Display.Color.RandomRGB(0, 100).color
+            },
+            blendMode: Phaser.BlendModes.ADD,
+        })
+
+        levelUpConfetti.addParticleProcessor(new ConfettiProcessor({ strength: 0.85 }))
+
         const candyGrid = this.add.candyGrid(0, 0)
 
         const gridWidth = GRID_CONFIG.gridWidth * GRID_CONFIG.tileWidth
@@ -60,7 +82,7 @@ export class GameScene extends Phaser.Scene {
         const progressText = this.add.text(
             this.cameras.main.centerX,
             this.cameras.main.height - 30,
-            '0%',
+            'Level: 1, Progress: 0%',
             {
                 fontFamily: 'Arial',
                 fontStyle: 'bold',
@@ -73,13 +95,13 @@ export class GameScene extends Phaser.Scene {
             this.curProgress += score / this.difficulty
             const percent = this.curProgress / this.maxProgress
 
-            progressText.text = `${Math.floor(percent * 100)}%`
+            progressText.text = `Level: ${this.difficulty}. Progress: ${Math.floor(percent * 100)}%`
 
             this.add.tween({
                 targets: this.progress,
                 duration: 500,
                 width: gridWidth * percent,
-                ease: Phaser.Math.Easing.Back.Out,
+                ease: Phaser.Math.Easing.Sine.InOut,
             })
 
             if (this.curProgress >= this.maxProgress) {
@@ -88,6 +110,7 @@ export class GameScene extends Phaser.Scene {
                 this.difficulty += 1
 
                 candyGrid.awaitTransition(true)
+                levelUpConfetti.emitParticle()
             }
         })
     }
