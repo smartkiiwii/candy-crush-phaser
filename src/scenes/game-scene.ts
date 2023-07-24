@@ -40,6 +40,10 @@ export class GameScene extends Phaser.Scene {
             blendMode: Phaser.BlendModes.ADD,
         })
 
+        const devEmitConfetti = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.C)
+        devEmitConfetti?.on('down', () => {
+            levelUpConfetti.emitParticle()
+        })
         levelUpConfetti.addParticleProcessor(new ConfettiProcessor({ strength: 0.85 }))
 
         const candyGrid = this.add.candyGrid(0, 0)
@@ -47,11 +51,13 @@ export class GameScene extends Phaser.Scene {
         const gridWidth = GRID_CONFIG.gridWidth * GRID_CONFIG.tileWidth
         const gridHeight = GRID_CONFIG.gridHeight * GRID_CONFIG.tileHeight
 
-        // scale the grid to fit some percentage of the screen
-        candyGrid.scale = Math.min(
-            (this.cameras.main.width / gridWidth) * 0.8,
-            (this.cameras.main.height / gridHeight) * 0.8
-        )
+        // scale the grid to fit some percentage of the screen if it's too big
+        if (gridWidth > this.cameras.main.width * 0.8 || gridHeight > this.cameras.main.height * 0.8) {
+            candyGrid.scale = Math.min(
+                (this.cameras.main.width / gridWidth) * 0.8,
+                (this.cameras.main.height / gridHeight) * 0.8
+            )
+        }
 
         // center it
         candyGrid.x =
