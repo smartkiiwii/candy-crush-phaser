@@ -30,6 +30,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
     private respawnQueue: SpawnConfig[]
 
+    private devForceSwap: Phaser.Input.Keyboard.Key | null
+
     /**
      *
      * @param scene The Scene to which this Game Object belongs. A Game Object can only belong to one Scene at a time.
@@ -162,6 +164,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         })
 
         scene.events.on('update', this.onUpdate, this)
+
+        // add dev force swap key
+        this.devForceSwap = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT) ?? null
     }
 
     onUpdate(): void {
@@ -424,7 +429,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         }
 
         // two downs are adjacent
-        if (difference.x + difference.y === 1) {
+        if (difference.x + difference.y === 1 || this.devForceSwap?.isDown) {
             const tileDown = this.tileDown
 
             this.tileDown.setFocused(false)
@@ -433,7 +438,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             this.tileDown = null
             this.tileSwap = null
 
-            tileDown.trySwapClear(tile)
+            tileDown.trySwapClear(tile, this.devForceSwap?.isDown ?? false)
             return
         }
 

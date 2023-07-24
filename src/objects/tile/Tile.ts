@@ -442,7 +442,7 @@ export default class Tile extends Phaser.GameObjects.Image {
         return this.grid
     }
 
-    trySwapClear(tile: Tile) {
+    trySwapClear(tile: Tile, force = false) {
         if (!this.active) {
             throw new Error('Tile: cannot swap inactive tile')
         }
@@ -508,7 +508,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
                 const clears = [...this.tryClear(), ...tile.tryClear()]
 
-                if (clears.length === 0) {
+                if (clears.length === 0 && !force) {
                     // revert swap
                     this.grid.swapTilesInternal(this, tile)
 
