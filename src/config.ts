@@ -1,6 +1,6 @@
 import { BootScene } from './scenes/boot-scene'
 import { GameScene } from './scenes/game-scene'
-// import TweenScene from './scenes/tween-scene'
+import TweenScene from './scenes/tween-scene'
 
 export const GameConfig: Phaser.Types.Core.GameConfig = {
     title: 'Candy crush',
@@ -13,8 +13,7 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
     },
     type: Phaser.AUTO,
     parent: 'game',
-    scene: [BootScene, GameScene],
-    // scene: [TweenScene],
+    scene: [BootScene, GameScene, TweenScene],
     backgroundColor: '#ffd580',
     render: { pixelArt: false },
     dom: {

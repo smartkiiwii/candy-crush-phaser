@@ -217,7 +217,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             }
 
             for (let x = 0; x < emptyTileCount; x++) {
-                const tile = this.tiles[x][y] as Tile
+                const tile = this.tiles[x][y]
 
                 const frameName = this.getRandomTileFrame()
 
@@ -260,7 +260,9 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         const tile = this.tilePool.getFirstDead(true) as Tile
         tile.setVisible(true)
         tile.setActive(true)
-        tile.setInteractive()
+        tile.setInteractive({
+            useHandCursor: true,
+        })
 
         if (tile.parentContainer !== this) {
             tile.parentContainer?.remove(tile)
@@ -522,6 +524,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
         if (!solve) {
             console.warn('no solve found')
+            this.awaitTransition(true)
             return
         }
 
@@ -551,8 +554,8 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
         // swap 2 tiles and check if there is a match
         for (let x = startX; x < this.config.gridHeight; x++) {
             for (let y = startY; y < this.config.gridWidth; y++) {
-                const tile1 = grid[x][y]
-                const tile2 = grid[x][y + 1]
+                const tile1 = this.getTileAt(x, y)
+                const tile2 = this.getTileAt(x, y + 1)
 
                 if (tile1 && tile2) {
                     this.swapTilesInternal(tile1, tile2)
@@ -573,6 +576,28 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
                         return [tile1, tile2]
                     }
                 }
+
+                const tile4 = this.getTileAt(x + 1, y)
+
+                if (tile1 && tile4) {
+                    this.swapTilesInternal(tile1, tile4)
+
+                    const temp = tile1.gridCoords.clone()
+                    tile1.gridCoords.copy(tile4.gridCoords)
+                    tile4.gridCoords.copy(temp)
+
+                    const matches = [...findClearables(tile1, grid), ...findClearables(tile4, grid)]
+
+                    this.swapTilesInternal(tile1, tile4)
+
+                    temp.copy(tile1.gridCoords)
+                    tile1.gridCoords.copy(tile4.gridCoords)
+                    tile4.gridCoords.copy(temp)
+
+                    if (matches.length > 0) {
+                        return [tile1, tile4]
+                    }
+                }
             }
         }
 
@@ -580,27 +605,38 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
     }
 
     private playTransition() {
-        const shuffledTiles = this.tiles.flat().filter((tile) => tile !== null)
+        const shuffledTiles = this.tiles.flat().filter((tile) => tile !== null).sort((a, b) => a.depth - b.depth)
 
         // shuffle tiles
         // Phaser.Utils.Array.Shuffle(shuffledTiles)
 
+        // const firstDepth = shuffledTiles[0].depth
+        const ogScale = shuffledTiles[0].scale
         const tiles = shuffledTiles.map((tile, idx) => {
             if (!(tile instanceof Tile)) {
                 throw new Error('tile is not a Tile object')
             }
 
+            const responseRate = Phaser.Math.FloatBetween(0.001, 0.005)
+            
+            // adjust scale to be smaller when response rate is lower
+            // by mapping 0.0001 to 0.2 and 0.001 to 1
+            const scale = ogScale * responseRate / (0.005 - 0.001) * 0.8 + 0.2
+
+            tile.setScale(scale)
             tile.setFocused(false)
             tile.disableInteractive()
+            // tile.setDepth(firstDepth + idx)
+
 
             const targetPosition = new Phaser.Math.Vector2(tile.x, tile.y)
             return {
                 order: idx,
                 targetPosition,
                 tweener: new SecondOrderDynamics(targetPosition, {
-                    responseRate: 0.0005,
-                    dampening: 0.7,
-                    eagerness: 2,
+                    responseRate,
+                    dampening: 0.5,
+                    eagerness: 4,
                 }),
                 tile,
             }
@@ -616,27 +652,20 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             this.bg.getCenter().x ?? 0,
             this.bg.getCenter().y ?? 0,
             radius,
-            radius
-        )
+            radius / 2,
+        ).setRotation(Phaser.Math.DegToRad(-30))
 
         this.scene.tweens.add({
             targets: shape,
             xRadius: -radius,
+            yRadius: -radius,
             duration,
-            ease: Phaser.Math.Easing.Linear,
-            repeat: 4,
+            ease: Phaser.Math.Easing.Quadratic.InOut,
+            repeat: 2,
             yoyo: true,
             onComplete: () => {
                 this.isTransitioning = false
             },
-        })
-
-        this.scene.tweens.add({
-            targets: shape,
-            angle: 360,
-            duration: duration,
-            ease: Phaser.Math.Easing.Linear,
-            repeat: 8,
         })
 
         const fn = (time: number, delta: number) => {
@@ -675,6 +704,10 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
 
                     const frame = this.getRandomTileFrame()
 
+                    // reset scale
+                    tile.tile.setScale(ogScale)
+
+                    // reset tile
                     tile.tile.reset({
                         x: tile.tile.x,
                         y: tile.tile.y,

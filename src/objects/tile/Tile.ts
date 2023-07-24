@@ -157,7 +157,7 @@ export default class Tile extends Phaser.GameObjects.Image {
 
         const focusState = new FocusState(this, {
             enterCondition: () => this.isFocused,
-            exitCondition: () => !this.isFocused || this.isClearing,
+            exitCondition: () => !this.isFocused || this.isClearing || this.isFalling,
         })
 
         const hintState = new HintState(this, {
@@ -363,12 +363,13 @@ export default class Tile extends Phaser.GameObjects.Image {
         this.clearState.explosionEmitter = this.explosionParticles
         this.isClearing = clearing
 
-        // TODO: add logic to handle special clears, now only clear itself
         switch (this.specialType) {
             case SpecialType.SMALL_EXPLOSION:
                 // erase all tiles in a 3x3 grid
                 this.grid.getSurroundingTilesOf(this, 1).forEach((neighbour) => {
-                    neighbour.setClearing()
+                    if (neighbour.active) {
+                        neighbour.setClearing()
+                    }
                 })
 
                 break
@@ -376,7 +377,9 @@ export default class Tile extends Phaser.GameObjects.Image {
             case SpecialType.BIG_EXPLOSION:
                 // erase all tiles in a 5x5 grid
                 this.grid.getSurroundingTilesOf(this, 3).forEach((neighbour) => {
-                    neighbour.setClearing()
+                    if (neighbour.active) {
+                        neighbour.setClearing()
+                    }
                 })
 
                 break

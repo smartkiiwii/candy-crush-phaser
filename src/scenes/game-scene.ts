@@ -63,7 +63,7 @@ export class GameScene extends Phaser.Scene {
         const progressBar = this.add.rectangle(
             this.cameras.main.centerX,
             this.cameras.main.height - 30,
-            gridWidth,
+            this.cameras.main.width * 0.8,
             40,
             0xff9580
         )
@@ -71,7 +71,7 @@ export class GameScene extends Phaser.Scene {
         this.progress = this.add.rectangle(
             this.cameras.main.centerX,
             this.cameras.main.height - 30,
-            gridWidth,
+            this.cameras.main.width * 0.8,
             40,
             0xeaff80
         )
@@ -103,7 +103,7 @@ export class GameScene extends Phaser.Scene {
             this.add.tween({
                 targets: this.progress,
                 duration: 500,
-                width: gridWidth * percent,
+                width: this.cameras.main.width * 0.8 * percent,
                 ease: Phaser.Math.Easing.Sine.InOut,
             })
 
