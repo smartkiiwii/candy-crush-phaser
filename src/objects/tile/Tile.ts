@@ -192,14 +192,6 @@ export default class Tile extends Phaser.GameObjects.Image {
                 if (above) {
                     above.setFalling()
                 }
-
-                // queue respawn
-                // const hasEmptyTileBelow = hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
-
-                // if (!hasEmptyTileBelow) {
-                //     // must be at the bottom of the block of empty tiles,
-                //     this.grid.queueRespawn(this, this.gridCoords.x + 1)
-                // }
             },
         })
 
@@ -562,24 +554,6 @@ export default class Tile extends Phaser.GameObjects.Image {
             !getNearestAbove(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y) &&
             !hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
         )
-
-        // the following is deprecated
-        // const nearestAbove = getNearestAbove(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
-        // const hasEmptyTileBelow = hasClearedBelow(this.grid.getTiles(), this.gridCoords.x, this.gridCoords.y)
-
-        /**
-         * if there is no tile above and no empty tile below,
-         * must be at the bottom of the block of empty tiles,
-         * reset all tiles by calling spawnTileAt() on the grid
-         * the x coord of this is the amount of empty tiles above it
-         */
-        // the following is deprecated
-        // if (!nearestAbove && !hasEmptyTileBelow) {
-        //     const emptyTiles = this.gridCoords.x + 1
-        //     for (let i = 0; i <= this.gridCoords.x; i++) {
-        //         this.grid.spawnTileAt(i, this.gridCoords.y, emptyTiles)
-        //     }
-        // }
     }
 }
 

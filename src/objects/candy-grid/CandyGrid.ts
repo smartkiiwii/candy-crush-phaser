@@ -691,11 +691,7 @@ export default class CandyGrid extends Phaser.GameObjects.Container {
             } else {
                 this.scene.events.off('update', fn)
 
-                tiles.forEach((tile, index) => {
-                    // calculate shuffled coords based on order
-                    // const x = Math.floor(index / this.config.gridWidth)
-                    // const y = index % this.config.gridWidth
-
+                tiles.forEach((tile) => {
                     const { x, y } = tile.tile.gridCoords
 
                     tile.tile.gridCoords.set(x, y)

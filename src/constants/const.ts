@@ -16,7 +16,7 @@ export const GRID_CONFIG: GridConfig = {
         // 'poptart1',
         // 'poptart2',
         'starcookie1',
-        'starcookie2',
+        // 'starcookie2',
     ],
     x: 0,
     y: 0,
